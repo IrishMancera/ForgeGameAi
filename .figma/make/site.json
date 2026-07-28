@@ -1,0 +1,10 @@
+{
+  "description": "Simplifies task management by allowing users to create, organize, and track tasks efficiently for improved productivity and workflow.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
