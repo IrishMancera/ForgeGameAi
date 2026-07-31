@@ -91,11 +91,20 @@ export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+function isNetworkError(error: unknown): boolean {
+  // TypeError = fetch failed (backend unreachable / ECONNREFUSED)
+  return error instanceof TypeError;
+}
+
 export async function login(email: string, password: string): Promise<AuthResponse> {
   try {
-    return await apiFetch<AuthResponse>('/api/auth/login', { method: 'POST', body: { email, password } });
+    const result = await apiFetch<AuthResponse>('/api/auth/login', { method: 'POST', body: { email, password } });
+    // Real backend responded — clear any stale local token
+    syncLocalUser(result.user, result.token);
+    return result;
   } catch (error) {
-    if (!shouldUseLocalFallback()) throw error;
+    // Only fall back to local auth if the backend is unreachable (network error)
+    if (!shouldUseLocalFallback() || !isNetworkError(error)) throw error;
 
     const localUsers = getLocalUsers();
     const existing = localUsers.find((entry) => entry.email === email.trim().toLowerCase());
@@ -116,9 +125,12 @@ export async function login(email: string, password: string): Promise<AuthRespon
 
 export async function register(email: string, password: string, firstName?: string, lastName?: string): Promise<AuthResponse> {
   try {
-    return await apiFetch<AuthResponse>('/api/auth/register', { method: 'POST', body: { email, password, firstName, lastName } });
+    const result = await apiFetch<AuthResponse>('/api/auth/register', { method: 'POST', body: { email, password, firstName, lastName } });
+    syncLocalUser(result.user, result.token);
+    return result;
   } catch (error) {
-    if (!shouldUseLocalFallback()) throw error;
+    // Only fall back to local auth if the backend is unreachable (network error)
+    if (!shouldUseLocalFallback() || !isNetworkError(error)) throw error;
 
     const cleanEmail = email.trim().toLowerCase();
     const localUsers = getLocalUsers();
@@ -138,10 +150,22 @@ export async function register(email: string, password: string, firstName?: stri
 }
 
 export async function fetchCurrentUser(): Promise<{ user: UserProfile }> {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  // If the stored token is a local-mode fake token, skip the backend call
+  // and return the stored user profile directly (offline/local mode)
+  if (token?.startsWith('local-')) {
+    const storedUser = getStoredUser();
+    if (storedUser) {
+      return { user: storedUser };
+    }
+    throw new Error('No active session');
+  }
+
   try {
     return await apiFetch<{ user: UserProfile }>('/api/auth/me');
   } catch (error) {
-    if (!shouldUseLocalFallback()) throw error;
+    if (!shouldUseLocalFallback() || !isNetworkError(error)) throw error;
 
     const storedUser = getStoredUser();
     if (!storedUser) {

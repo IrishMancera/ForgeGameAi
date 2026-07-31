@@ -45,6 +45,11 @@ export async function initializeDatabase(dbPath: string): Promise<Database> {
       psychology JSONB,
       simulation JSONB,
       auditResults JSONB,
+      systems JSONB,
+      analytics JSONB,
+      workbook JSONB,
+      knowledgeBase JSONB,
+      settings JSONB,
       systemHealth INTEGER DEFAULT 85,
       blueprintComplete INTEGER DEFAULT 50,
       criticalRisks INTEGER DEFAULT 0,
@@ -137,6 +142,101 @@ export async function initializeDatabase(dbPath: string): Promise<Database> {
       FOREIGN KEY (projectId) REFERENCES projects(id)
     );
 
+    -- Agent Plans table
+    CREATE TABLE IF NOT EXISTS agent_plans (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      prompt TEXT NOT NULL,
+      plannerSummary TEXT,
+      status TEXT DEFAULT 'pending',
+      confidence INTEGER DEFAULT 90,
+      reasoning TEXT,
+      requiresApproval BOOLEAN DEFAULT 0,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id)
+    );
+
+    -- Plan Steps table
+    CREATE TABLE IF NOT EXISTS plan_steps (
+      id TEXT PRIMARY KEY,
+      planId TEXT NOT NULL,
+      stepIndex INTEGER NOT NULL,
+      agentRole TEXT NOT NULL,
+      description TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      confidence INTEGER DEFAULT 90,
+      durationMs INTEGER DEFAULT 0,
+      output TEXT,
+      affectedSystems JSONB,
+      toolCalls JSONB,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (planId) REFERENCES agent_plans(id)
+    );
+
+    -- Project Memory table
+    CREATE TABLE IF NOT EXISTS project_memory (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      type TEXT NOT NULL,
+      content TEXT NOT NULL,
+      metadata JSONB,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id)
+    );
+
+    -- Conversation Memory table
+    CREATE TABLE IF NOT EXISTS conversation_memory (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      role TEXT NOT NULL,
+      text TEXT NOT NULL,
+      metadata JSONB,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id)
+    );
+
+    -- Proposals table
+    CREATE TABLE IF NOT EXISTS proposals (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      planId TEXT,
+      agentRole TEXT NOT NULL,
+      summary TEXT NOT NULL,
+      affectedSystems JSONB,
+      diff JSONB,
+      status TEXT DEFAULT 'pending',
+      appliedAt DATETIME,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id),
+      FOREIGN KEY (planId) REFERENCES agent_plans(id)
+    );
+
+    -- Version History table
+    CREATE TABLE IF NOT EXISTS version_history (
+      id TEXT PRIMARY KEY,
+      projectId TEXT NOT NULL,
+      versionNumber INTEGER NOT NULL,
+      summary TEXT NOT NULL,
+      snapshot JSONB NOT NULL,
+      proposalId TEXT,
+      createdBy TEXT,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id),
+      FOREIGN KEY (proposalId) REFERENCES proposals(id)
+    );
+
+    -- Password Reset Tokens table
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      tokenHash TEXT NOT NULL,
+      expiresAt DATETIME NOT NULL,
+      usedAt DATETIME,
+      createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (userId) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_projects_userId ON projects(userId);
     CREATE INDEX IF NOT EXISTS idx_aiConversations_projectId ON aiConversations(projectId);
@@ -145,7 +245,22 @@ export async function initializeDatabase(dbPath: string): Promise<Database> {
     CREATE INDEX IF NOT EXISTS idx_billingHistory_userId ON billingHistory(userId);
     CREATE INDEX IF NOT EXISTS idx_exports_projectId ON exports(projectId);
     CREATE INDEX IF NOT EXISTS idx_auditLogs_userId ON auditLogs(userId);
+    CREATE INDEX IF NOT EXISTS idx_agent_plans_projectId ON agent_plans(projectId);
+    CREATE INDEX IF NOT EXISTS idx_plan_steps_planId ON plan_steps(planId);
+    CREATE INDEX IF NOT EXISTS idx_proposals_projectId ON proposals(projectId);
+    CREATE INDEX IF NOT EXISTS idx_version_history_projectId ON version_history(projectId);
+    CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_userId ON password_reset_tokens(userId);
   `);
+
+  // Ensure new columns exist on existing databases
+  const moduleCols = ['systems', 'analytics', 'workbook', 'knowledgeBase', 'settings'];
+  for (const col of moduleCols) {
+    try {
+      await db.exec(`ALTER TABLE projects ADD COLUMN ${col} JSONB;`);
+    } catch {
+      // Column already exists
+    }
+  }
 
   return db;
 }

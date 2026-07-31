@@ -5,6 +5,7 @@ import AIPanel from './components/AIPanel';
 import { ToastCenter, type ToastMessage, createToast, type ToastType } from './components/Toast';
 import { getBackendSnapshot, type BackendSnapshot } from './services/backend';
 import { fetchCurrentUser, getStoredUser, getStoredToken, clearAuth, type UserProfile } from './services/auth';
+import { getProjects, createProject, type AppProject } from './services/project';
 
 import CommandCenter from './pages/CommandCenter';
 import GameBlueprint from './pages/GameBlueprint';
@@ -22,43 +23,93 @@ import PublicWebsite from './pages/PublicWebsite';
 import Auth from './pages/Auth';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<AppPage>('website');
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [aiCollapsed, setAiCollapsed] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [backendSnapshot, setBackendSnapshot] = useState<BackendSnapshot | null>(null);
   const [user, setUser] = useState<UserProfile | null>(getStoredUser());
   const [authPage, setAuthPage] = useState<'sign-in' | 'register' | null>(null);
+  const [snapshotVersion, setSnapshotVersion] = useState(0);
+
+  // Projects State
+  const [projectsList, setProjectsList] = useState<AppProject[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | undefined>(undefined);
+
+  const getInitialPage = (): AppPage => {
+    const saved = localStorage.getItem('gameforge_current_page') as AppPage | null;
+    const hasAuth = Boolean(getStoredUser() || getStoredToken());
+    if (hasAuth) {
+      return saved && saved !== 'website' ? saved : 'command-center';
+    }
+    return saved || 'website';
+  };
+
+  const [currentPage, setCurrentPage] = useState<AppPage>(getInitialPage);
+
+  // Fetch projects list when user is logged in
+  const fetchUserProjects = useCallback(async () => {
+    try {
+      const res = await getProjects();
+      setProjectsList(res.projects);
+      if (res.projects.length > 0 && !activeProjectId) {
+        setActiveProjectId(res.projects[0].id);
+      }
+    } catch {
+      // ignore fetch error
+    }
+  }, [activeProjectId]);
 
   useEffect(() => {
-    let active = true;
+    if (user || getStoredToken()) {
+      fetchUserProjects();
+    }
+  }, [user, snapshotVersion, fetchUserProjects]);
 
+  // Refresh backend snapshot — called on mount and after project creation
+  const refreshSnapshot = useCallback(() => {
+    let active = true;
     getBackendSnapshot()
       .then((snapshot) => {
         if (active) {
           setBackendSnapshot(snapshot);
+          if (snapshot?.projectId && !activeProjectId) {
+            setActiveProjectId(String(snapshot.projectId));
+          }
         }
       })
-      .catch(() => {
-        if (active) {
-          setBackendSnapshot(null);
-        }
-      });
+      .catch(() => { if (active) setBackendSnapshot(null); });
+    return () => { active = false; };
+  }, [activeProjectId]);
 
-    return () => {
-      active = false;
-    };
-  }, []);
+  useEffect(() => {
+    return refreshSnapshot();
+  }, [snapshotVersion, refreshSnapshot]);
 
   useEffect(() => {
     const token = getStoredToken();
-    if (!token || user) return;
+    if (!token) return;
+
+    if (token.startsWith('local-')) {
+      fetch('/api/health')
+        .then((r) => r.ok ? r.json() : Promise.reject())
+        .then(() => {
+          addToast('info', 'Backend connected', 'Sign out and sign in again to sync your account with the server.');
+        })
+        .catch(() => {
+          const stored = getStoredUser();
+          if (stored && !user) setUser(stored);
+        });
+      return;
+    }
+
+    if (user) return;
 
     fetchCurrentUser()
       .then((response) => setUser(response.user))
       .catch(() => {
         clearAuth();
         setUser(null);
+        setCurrentPage('website');
       });
   }, [user]);
 
@@ -72,13 +123,15 @@ export default function App() {
 
   const navigate = (page: AppPage) => {
     setCurrentPage(page);
+    localStorage.setItem('gameforge_current_page', page);
     setAuthPage(null);
   };
 
   const handleEnterApp = () => {
-    if (user) {
-      setCurrentPage('command-center');
-      setAuthPage(null);
+    if (user || getStoredToken()) {
+      const saved = localStorage.getItem('gameforge_current_page') as AppPage | null;
+      const target = saved && saved !== 'website' ? saved : 'command-center';
+      navigate(target);
     } else {
       setAuthPage('sign-in');
     }
@@ -87,15 +140,48 @@ export default function App() {
   const handleAuthenticated = (profile: UserProfile) => {
     setUser(profile);
     setAuthPage(null);
-    setCurrentPage('command-center');
+    const saved = localStorage.getItem('gameforge_current_page') as AppPage | null;
+    const targetPage = saved && saved !== 'website' ? saved : 'command-center';
+    setCurrentPage(targetPage);
+    localStorage.setItem('gameforge_current_page', targetPage);
+    setSnapshotVersion((v) => v + 1);
   };
 
   const handleSignOut = () => {
     clearAuth();
     setUser(null);
+    localStorage.setItem('gameforge_current_page', 'website');
     setCurrentPage('website');
     setAuthPage(null);
+    setProjectsList([]);
+    setActiveProjectId(undefined);
     addToast('info', 'Signed out', 'You are now signed out of GameForge.');
+  };
+
+  const handleCreateProjectHeader = async (name: string, genre?: string, targetPlatform?: string) => {
+    const res = await createProject(name, genre, targetPlatform);
+    setProjectsList((prev) => [res.project, ...prev]);
+    setActiveProjectId(res.project.id);
+    setSnapshotVersion((v) => v + 1);
+  };
+
+  const handleSelectProject = (projectId: string) => {
+    setActiveProjectId(projectId);
+    const selected = projectsList.find((p) => p.id === projectId);
+    if (selected && backendSnapshot) {
+      setBackendSnapshot({
+        ...backendSnapshot,
+        projectId: selected.id,
+        projectName: selected.name,
+        gameGenre: selected.genre || 'Hybrid-Casual Tycoon',
+        liveMetrics: {
+          health: selected.systemHealth,
+          blueprint: selected.blueprintComplete,
+          risks: selected.criticalRisks,
+          decisions: selected.openDecisions,
+        },
+      });
+    }
   };
 
   if (authPage) {
@@ -112,9 +198,12 @@ export default function App() {
   }
 
   const renderPage = () => {
-    const props = { onToast: addToast, user, onSignOut: handleSignOut };
+    const activeId = activeProjectId || (backendSnapshot?.projectId ? String(backendSnapshot.projectId) : undefined);
+    const props = { onToast: addToast, user, onSignOut: handleSignOut, projectId: activeId };
+    const onProjectCreated = () => setSnapshotVersion((v) => v + 1);
+
     switch (currentPage) {
-      case 'command-center': return <CommandCenter {...props} />;
+      case 'command-center': return <CommandCenter {...props} onProjectCreated={onProjectCreated} />;
       case 'game-blueprint': return <GameBlueprint {...props} />;
       case 'systems': return <Systems {...props} />;
       case 'economy-lab': return <EconomyLab {...props} />;
@@ -131,7 +220,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(108,59,255,0.16),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(25,198,209,0.18),_transparent_35%),linear-gradient(135deg,_#fff9f2_0%,_#fef8f1_45%,_#f7f0ff_100%)] text-[#17152B]">
+    <div className="relative flex h-full min-h-screen w-full overflow-hidden bg-[#FFF9F2] bg-[radial-gradient(circle_at_top_left,_rgba(108,59,255,0.16),_transparent_32%),radial-gradient(circle_at_bottom_right,_rgba(25,198,209,0.18),_transparent_35%),linear-gradient(135deg,_#fff9f2_0%,_#fef8f1_45%,_#f7f0ff_100%)] text-[#17152B]">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="ambient-orb ambient-orb-left" />
         <div className="ambient-orb ambient-orb-right" />
@@ -139,7 +228,19 @@ export default function App() {
       </div>
 
       <div className="relative z-10 flex h-full w-full flex-col">
-        <Header onToast={addToast} unsavedChanges={unsavedChanges} snapshot={backendSnapshot} user={user} onSignOut={handleSignOut} />
+        <Header
+          onToast={addToast}
+          unsavedChanges={unsavedChanges}
+          snapshot={backendSnapshot}
+          user={user}
+          onSignOut={handleSignOut}
+          projects={projectsList}
+          activeProjectId={activeProjectId}
+          onSelectProject={handleSelectProject}
+          onCreateProject={handleCreateProjectHeader}
+          onNavigate={(page) => navigate(page as AppPage)}
+          onSave={() => addToast("success", "Workspace Saved", "All module configurations synced to project database.")}
+        />
 
         <div className="flex flex-1 overflow-hidden">
           <Sidebar currentPage={currentPage} onNavigate={navigate} snapshot={backendSnapshot} />
@@ -155,7 +256,7 @@ export default function App() {
             collapsed={aiCollapsed}
             onToggle={() => setAiCollapsed(!aiCollapsed)}
             snapshot={backendSnapshot}
-            projectId={backendSnapshot?.projectId}
+            projectId={activeProjectId || backendSnapshot?.projectId}
           />
         </div>
       </div>

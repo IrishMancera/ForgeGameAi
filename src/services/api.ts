@@ -10,7 +10,8 @@ function buildHeaders(): HeadersInit {
   };
 
   const token = localStorage.getItem('gameforge_token');
-  if (token) {
+  // Only send real JWTs — skip local-fallback tokens (local-xxx) generated when backend is offline
+  if (token && !token.startsWith('local-')) {
     headers.Authorization = `Bearer ${token}`;
   }
 

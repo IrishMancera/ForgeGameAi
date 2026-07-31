@@ -1,317 +1,347 @@
-import { useState } from "react";
-import { Download, CheckCircle, AlertTriangle, XCircle, Eye, ChevronRight, Table2 } from "lucide-react";
-import { WORKBOOK_SHEETS } from "../data/mockData";
+import { useState, useRef } from "react";
+import {
+  Table as TableIcon, Plus, Save, Cloud, CheckCircle2, Download, Upload, Trash2, Edit3, X, FileSpreadsheet
+} from "lucide-react";
+import * as XLSX from "xlsx";
+import { useModuleState } from "../services/useModuleState";
 
 interface WorkbookStudioProps {
   onToast: (type: "success" | "error" | "warning" | "info", title: string, message?: string) => void;
+  projectId?: string;
 }
 
-type GenerateState = "idle" | "validating" | "generating" | "done";
+interface SheetTab {
+  id: string;
+  name: string;
+  columns: string[];
+  rows: string[][];
+}
 
-const STATUS_STYLE: Record<string, { icon: React.ReactNode; style: string }> = {
-  Ready: { icon: <CheckCircle size={12} />, style: "text-[#19A974] bg-[#EDFAF4] border-[#C8F0DC]" },
-  Warning: { icon: <AlertTriangle size={12} />, style: "text-[#FFC928] bg-[#FFF8E6] border-[#FFE89A]" },
-  Error: { icon: <XCircle size={12} />, style: "text-[#FF3B4F] bg-[#FFF0F2] border-[#FFB3BB]" },
-};
-
-const PREVIEW_CELLS = [
-  ["Level", "XP Required", "Cumulative XP", "Est. Sessions", "Est. Time", "Unlock", "Reward"],
-  ["1", "100", "100", "2", "0.6h", "Reception Desk", "50 Coins"],
-  ["2", "135", "235", "3", "0.8h", "Guest Room A", "1 Diamond"],
-  ["5", "245", "890", "5", "1.4h", "Vending Machine", "Ghost Staff"],
-  ["10", "551", "2,840", "10", "3.1h", "Swimming Pool", "Pool Skin"],
+const DEFAULT_SHEETS: SheetTab[] = [
+  {
+    id: "sheet-1",
+    name: "Room Upgrade Economy",
+    columns: ["Tier", "Room Name", "Base Upgrade Cost", "Gold Income/min", "Payback Time (min)", "Status"],
+    rows: [
+      ["Tier 1", "Haunted Lobby", "100", "12", "8.3", "Active"],
+      ["Tier 2", "Ghostly Library", "250", "28", "8.9", "Active"],
+      ["Tier 3", "Phantom Suite", "650", "65", "10.0", "Active"],
+      ["Tier 4", "Supernatural Ballroom", "1,800", "150", "12.0", "Draft"],
+      ["Tier 5", "Poltergeist Penthouse", "5,000", "380", "13.1", "Draft"],
+    ],
+  },
+  {
+    id: "sheet-2",
+    name: "Gacha Staff Drop Table",
+    columns: ["Staff ID", "Staff Name", "Rarity", "Drop Rate (%)", "Pity Count", "Energy Bonus"],
+    rows: [
+      ["STF-01", "Ghost Butler Edgar", "Common", "40.0%", "0", "+5% Gold"],
+      ["STF-02", "Phantom Maid Clara", "Uncommon", "30.0%", "0", "+10% Gold"],
+      ["STF-03", "Banshee Singer Victoria", "Rare", "15.0%", "5", "+15% Energy"],
+      ["STF-04", "Specter Chef Gustave", "Epic", "4.0%", "15", "+25% Speed"],
+      ["STF-05", "Lord Malakor", "Legendary", "1.0%", "50", "+50% All Sinks"],
+    ],
+  },
 ];
 
-export default function WorkbookStudio({ onToast }: WorkbookStudioProps) {
-  const [selectedSheets, setSelectedSheets] = useState<Set<string>>(
-    new Set(WORKBOOK_SHEETS.filter((s) => s.status !== "Error").map((s) => s.num))
+export default function WorkbookStudio({ onToast, projectId }: WorkbookStudioProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Persistent state
+  const [workbookData, setWorkbookData, saveNow, saving] = useModuleState(
+    'workbook',
+    { sheets: DEFAULT_SHEETS },
+    projectId
   );
-  const [activeSheet, setActiveSheet] = useState(WORKBOOK_SHEETS[11]);
-  const [generateState, setGenerateState] = useState<GenerateState>("idle");
-  const [generateProgress, setGenerateProgress] = useState(0);
-  const [successModal, setSuccessModal] = useState(false);
-  const [exportHistory] = useState([
-    { version: "v0.9.2", author: "Jordan K.", scenario: "Baseline", date: "2026-07-18", format: "XLSX", status: "Complete" },
-    { version: "v0.9.1", author: "Riley M.", scenario: "Sensitivity A", date: "2026-07-14", format: "XLSX", status: "Complete" },
-    { version: "v0.9.0", author: "Jordan K.", scenario: "Baseline", date: "2026-07-10", format: "CSV Bundle", status: "Complete" },
-  ]);
-  const [settings, setSettings] = useState({
-    includeFormulas: true,
-    includeSampleData: true,
-    protectFormulas: false,
-    includeCharts: true,
-    freezeHeaders: true,
-    addValidations: true,
-    format: "XLSX",
-    locale: "en-US",
-  });
 
-  const errorCount = WORKBOOK_SHEETS.filter((s) => s.status === "Error" && selectedSheets.has(s.num)).length;
-  const warnCount = WORKBOOK_SHEETS.filter((s) => s.status === "Warning" && selectedSheets.has(s.num)).length;
-  const readyPct = Math.round((WORKBOOK_SHEETS.filter((s) => selectedSheets.has(s.num) && s.status === "Ready").length / Math.max(selectedSheets.size, 1)) * 100);
+  const sheets = workbookData.sheets;
+  const [activeSheetId, setActiveSheetId] = useState<string>("sheet-1");
 
-  const handleGenerate = () => {
-    if (errorCount > 0) {
-      onToast("error", "Cannot generate workbook", `${errorCount} sheet(s) have blocking errors. Fix them first.`);
+  const currentSheet = sheets.find((s) => s.id === activeSheetId) || sheets[0] || DEFAULT_SHEETS[0];
+
+  // Cell editing handler
+  const handleCellChange = (rowIndex: number, colIndex: number, value: string) => {
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: prev.sheets.map((sheet) => {
+        if (sheet.id !== currentSheet.id) return sheet;
+        const newRows = sheet.rows.map((row, rIdx) => {
+          if (rIdx !== rowIndex) return row;
+          const nextRow = [...row];
+          nextRow[colIndex] = value;
+          return nextRow;
+        });
+        return { ...sheet, rows: newRows };
+      }),
+    }));
+  };
+
+  // Row operations
+  const handleAddRow = () => {
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: prev.sheets.map((sheet) => {
+        if (sheet.id !== currentSheet.id) return sheet;
+        const newRow = Array(sheet.columns.length).fill("");
+        return { ...sheet, rows: [...sheet.rows, newRow] };
+      }),
+    }));
+    onToast("success", "Row added", `Inserted row ${currentSheet.rows.length + 1}`);
+  };
+
+  const handleDeleteRow = (rowIndex: number) => {
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: prev.sheets.map((sheet) => {
+        if (sheet.id !== currentSheet.id) return sheet;
+        return { ...sheet, rows: sheet.rows.filter((_, idx) => idx !== rowIndex) };
+      }),
+    }));
+    onToast("info", "Row removed", "Deleted row from table");
+  };
+
+  // Column operations
+  const handleAddColumn = () => {
+    const colName = prompt("Enter column header title:", "New Column");
+    if (!colName) return;
+
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: prev.sheets.map((sheet) => {
+        if (sheet.id !== currentSheet.id) return sheet;
+        return {
+          ...sheet,
+          columns: [...sheet.columns, colName],
+          rows: sheet.rows.map((r) => [...r, ""]),
+        };
+      }),
+    }));
+    onToast("success", "Column added", `Added column "${colName}"`);
+  };
+
+  // Tab operations
+  const handleAddSheet = () => {
+    const sheetName = prompt("Enter new sheet tab name:", "New Sheet");
+    if (!sheetName) return;
+    const newId = `sheet-${Date.now()}`;
+    const newSheet: SheetTab = {
+      id: newId,
+      name: sheetName,
+      columns: ["Column A", "Column B", "Column C"],
+      rows: [["Data 1", "Data 2", "Data 3"]],
+    };
+
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: [...prev.sheets, newSheet],
+    }));
+    setActiveSheetId(newId);
+    onToast("success", "Sheet created", `Added tab "${sheetName}"`);
+  };
+
+  const handleDeleteSheet = (sheetId: string) => {
+    if (sheets.length <= 1) {
+      onToast("error", "Cannot delete", "Workbook must have at least one sheet tab");
       return;
     }
-    setGenerateState("validating");
-    setGenerateProgress(0);
-    setTimeout(() => { setGenerateState("generating"); setGenerateProgress(33); }, 800);
-    setTimeout(() => setGenerateProgress(66), 1400);
-    setTimeout(() => { setGenerateProgress(100); setGenerateState("done"); setSuccessModal(true); }, 2200);
+    setWorkbookData((prev) => ({
+      ...prev,
+      sheets: prev.sheets.filter((s) => s.id !== sheetId),
+    }));
+    setActiveSheetId(sheets.find((s) => s.id !== sheetId)?.id || "sheet-1");
+    onToast("info", "Sheet removed", "Deleted sheet tab");
   };
 
-  const toggleSheet = (num: string) => {
-    const next = new Set(selectedSheets);
-    next.has(num) ? next.delete(num) : next.add(num);
-    setSelectedSheets(next);
+  // Real XLSX Export using `xlsx` library
+  const handleExportXLSX = () => {
+    const wb = XLSX.utils.book_new();
+
+    sheets.forEach((sheet) => {
+      const data = [sheet.columns, ...sheet.rows];
+      const ws = XLSX.utils.aoa_to_sheet(data);
+      XLSX.utils.book_append_sheet(wb, ws, sheet.name.substring(0, 30));
+    });
+
+    XLSX.writeFile(wb, `gameforge-workbook-studio.xlsx`);
+    onToast("success", "XLSX Exported", "Downloaded genuine Excel workbook .xlsx file");
   };
 
-  const toggleAll = () => {
-    selectedSheets.size === WORKBOOK_SHEETS.length
-      ? setSelectedSheets(new Set())
-      : setSelectedSheets(new Set(WORKBOOK_SHEETS.map((s) => s.num)));
+  // Real XLSX Import using `xlsx` library
+  const handleImportXLSX = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: "binary" });
+
+        const importedSheets: SheetTab[] = wb.SheetNames.map((name, idx) => {
+          const ws = wb.Sheets[name];
+          const rawData = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
+          const columns = (rawData[0] as string[]) || ["Col A", "Col B", "Col C"];
+          const rows = rawData.slice(1).map((r) => columns.map((_, i) => String(r[i] ?? "")));
+          return {
+            id: `imported-${idx}-${Date.now()}`,
+            name,
+            columns,
+            rows,
+          };
+        });
+
+        if (importedSheets.length > 0) {
+          setWorkbookData({ sheets: importedSheets });
+          setActiveSheetId(importedSheets[0].id);
+          onToast("success", "XLSX Loaded", `Imported ${importedSheets.length} sheet tabs from ${file.name}`);
+        }
+      } catch (err) {
+        onToast("error", "Import failed", "Could not parse Excel file");
+      }
+    };
+    reader.readAsBinaryString(file);
   };
 
   return (
-    <div className="flex-1 overflow-hidden flex bg-[#FFF9F2]">
-      {/* Left panel — settings */}
-      <div className="w-64 shrink-0 bg-white border-r border-[#DED9EA] overflow-y-auto">
-        <div className="px-4 py-3 border-b border-[#DED9EA]">
-          <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider">Workbook Settings</div>
+    <div className="flex-1 overflow-hidden flex flex-col bg-[#FFF9F2]">
+      {/* Header toolbar */}
+      <div className="bg-white border-b border-[#DED9EA] px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <FileSpreadsheet size={18} className="text-[#6C3BFF]" />
+          <div>
+            <h1 className="text-sm font-bold text-[#17152B]">Workbook Studio (XLSX Spreadsheet Engine)</h1>
+            <p className="text-[10px] text-[#6C6880]">Full multi-tab Excel spreadsheet editor with native .xlsx read & write</p>
+          </div>
         </div>
-        <div className="p-4 space-y-3">
-          <div>
-            <label className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider block mb-1">Workbook Name</label>
-            <input defaultValue="HauntedHotel_v0.9.3" className="w-full text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg px-3 py-2 focus:outline-none focus:border-[#6C3BFF] text-[#17152B]" />
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider block mb-1">Export Format</label>
-            <select value={settings.format} onChange={(e) => setSettings({ ...settings, format: e.target.value })}
-              className="w-full text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg px-3 py-2 focus:outline-none focus:border-[#6C3BFF] text-[#17152B]">
-              {["XLSX", "CSV Bundle", "Google Sheets Ready", "JSON Data Pack"].map((f) => <option key={f}>{f}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider block mb-1">Locale</label>
-            <select value={settings.locale} onChange={(e) => setSettings({ ...settings, locale: e.target.value })}
-              className="w-full text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg px-3 py-2 text-[#17152B]">
-              {["en-US", "en-GB", "de-DE", "ja-JP", "ko-KR"].map((l) => <option key={l}>{l}</option>)}
-            </select>
-          </div>
 
-          <div className="pt-1 space-y-2">
-            {[
-              { key: "includeFormulas", label: "Include Formulas" },
-              { key: "includeSampleData", label: "Include Sample Data" },
-              { key: "protectFormulas", label: "Protect Formula Cells" },
-              { key: "includeCharts", label: "Include Charts" },
-              { key: "freezeHeaders", label: "Freeze Headers" },
-              { key: "addValidations", label: "Add Validation Lists" },
-            ].map(({ key, label }) => (
-              <label key={key} className="flex items-center justify-between cursor-pointer">
-                <span className="text-xs text-[#17152B]">{label}</span>
-                <div
-                  onClick={() => setSettings({ ...settings, [key]: !settings[key as keyof typeof settings] })}
-                  className={`w-8 h-4 rounded-full transition-colors cursor-pointer relative ${settings[key as keyof typeof settings] ? "bg-[#6C3BFF]" : "bg-[#DED9EA]"}`}
-                >
-                  <div className={`absolute top-0.5 w-3 h-3 bg-white rounded-full shadow transition-all ${settings[key as keyof typeof settings] ? "left-4" : "left-0.5"}`} />
-                </div>
-              </label>
-            ))}
-          </div>
-
+        <div className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImportXLSX}
+            accept=".xlsx, .xls, .csv"
+            className="hidden"
+          />
           <button
-            onClick={handleGenerate}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors ${generateState !== "idle" && generateState !== "done" ? "bg-[#6C3BFF]/60 cursor-not-allowed" : "bg-[#6C3BFF] hover:bg-[#5a2fe0]"}`}
-            disabled={generateState === "validating" || generateState === "generating"}
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#6C6880] bg-white border border-[#DED9EA] rounded-xl hover:bg-[#F4F1FA]"
           >
-            <Download size={14} />
-            {generateState === "validating" ? "Validating…" : generateState === "generating" ? `Generating (${generateProgress}%)` : "Generate Workbook"}
+            <Upload size={13} /> Import .XLSX
+          </button>
+          <button
+            onClick={handleExportXLSX}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#6C3BFF] bg-[#F4F1FA] border border-[#DED9EA] rounded-xl hover:bg-[#ede8fb]"
+          >
+            <Download size={13} /> Download .XLSX
           </button>
 
-          {(generateState === "validating" || generateState === "generating") && (
-            <div className="h-1.5 bg-[#F4F1FA] rounded-full overflow-hidden">
-              <div className="h-full bg-[#6C3BFF] rounded-full transition-all duration-500" style={{ width: `${generateProgress}%` }} />
-            </div>
-          )}
+          <button
+            onClick={async () => { await saveNow(); onToast("success", "Workbook saved", "Synced spreadsheet data"); }}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-[#6C3BFF] rounded-xl hover:bg-[#5a2fe0]"
+          >
+            {saving ? <Cloud size={13} className="animate-pulse" /> : <Save size={13} />} Save Workbook
+          </button>
         </div>
       </div>
 
-      {/* Center — sheet list */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="bg-white border-b border-[#DED9EA] px-4 py-2.5 flex items-center gap-3">
-          <input type="checkbox"
-            checked={selectedSheets.size === WORKBOOK_SHEETS.length}
-            onChange={toggleAll}
-            className="w-3.5 h-3.5 accent-[#6C3BFF] cursor-pointer"
-          />
-          <span className="text-xs text-[#6C6880]">{selectedSheets.size} of {WORKBOOK_SHEETS.length} sheets selected</span>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          <table className="w-full text-xs">
-            <thead className="bg-[#F4F1FA] sticky top-0">
-              <tr>
-                <th className="px-4 py-2.5 w-8" />
-                {["Sheet", "Description", "Rows", "Formulas", "Status", "Updated", ""].map((h) => (
-                  <th key={h} className="text-left px-3 py-2.5 text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider whitespace-nowrap">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#DED9EA]">
-              {WORKBOOK_SHEETS.map((sheet) => {
-                const st = STATUS_STYLE[sheet.status] ?? STATUS_STYLE.Ready;
-                const selected = selectedSheets.has(sheet.num);
-                return (
-                  <tr key={sheet.num}
-                    className={`table-row-hover cursor-pointer ${activeSheet?.num === sheet.num ? "bg-[#F4F1FA]" : ""}`}
-                    onClick={() => setActiveSheet(sheet)}>
-                    <td className="px-4 py-2.5">
-                      <input type="checkbox" checked={selected} onChange={() => toggleSheet(sheet.num)} onClick={(e) => e.stopPropagation()}
-                        className="w-3.5 h-3.5 accent-[#6C3BFF] cursor-pointer" />
+      {/* Tabs bar */}
+      <div className="bg-white border-b border-[#DED9EA] px-5 flex items-center gap-1 overflow-x-auto">
+        {sheets.map((s) => (
+          <div key={s.id} className="group relative flex items-center">
+            <button
+              onClick={() => setActiveSheetId(s.id)}
+              className={`px-4 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-colors flex items-center gap-2 ${
+                activeSheetId === s.id ? "border-[#6C3BFF] text-[#6C3BFF]" : "border-transparent text-[#6C6880] hover:text-[#17152B]"
+              }`}
+            >
+              <TableIcon size={12} />
+              {s.name}
+            </button>
+            {sheets.length > 1 && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleDeleteSheet(s.id); }}
+                className="opacity-0 group-hover:opacity-100 text-[#6C6880] hover:text-[#FF3B4F] p-1 transition-all mr-1"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={handleAddSheet}
+          className="flex items-center gap-1 px-3 py-1 text-xs text-[#6C3BFF] font-semibold hover:bg-[#F4F1FA] rounded-lg ml-2"
+        >
+          <Plus size={13} /> Add Sheet Tab
+        </button>
+      </div>
+
+      {/* Grid editor */}
+      <div className="flex-1 overflow-auto p-5">
+        <div className="bg-white border border-[#DED9EA] rounded-xl overflow-hidden shadow-sm">
+          <div className="p-3 bg-[#F4F1FA] border-b border-[#DED9EA] flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-bold text-[#17152B]">{currentSheet.name}</span>
+              <span className="text-[10px] text-[#6C6880]">{currentSheet.rows.length} rows × {currentSheet.columns.length} columns</span>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddColumn}
+                className="px-3 py-1 text-xs font-semibold text-[#6C3BFF] bg-white border border-[#DED9EA] rounded-lg hover:bg-[#F4F1FA]"
+              >
+                + Insert Column
+              </button>
+              <button
+                onClick={handleAddRow}
+                className="px-3 py-1 text-xs font-semibold text-white bg-[#6C3BFF] rounded-lg hover:bg-[#5a2fe0]"
+              >
+                + Insert Row
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#F4F1FA] text-[#6C6880] border-b border-[#DED9EA] uppercase tracking-wider">
+                  <th className="p-2 w-10 text-center border-r border-[#DED9EA]">#</th>
+                  {currentSheet.columns.map((col, cIdx) => (
+                    <th key={cIdx} className="p-2 font-bold text-[#17152B] border-r border-[#DED9EA]">
+                      {col}
+                    </th>
+                  ))}
+                  <th className="p-2 w-12 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#DED9EA]">
+                {currentSheet.rows.map((row, rIdx) => (
+                  <tr key={rIdx} className="hover:bg-[#F4F1FA]/40">
+                    <td className="p-2 text-center text-[#6C6880] font-mono bg-[#F4F1FA]/60 border-r border-[#DED9EA]">
+                      {rIdx + 1}
                     </td>
-                    <td className="px-3 py-2.5 font-mono font-semibold text-[#17152B] whitespace-nowrap">
-                      {sheet.num}_{sheet.name}
-                    </td>
-                    <td className="px-3 py-2.5 text-[#6C6880] max-w-[180px] truncate">{sheet.desc}</td>
-                    <td className="px-3 py-2.5 font-mono text-[#6C6880]">{sheet.rows}</td>
-                    <td className="px-3 py-2.5 font-mono text-[#6C6880]">{sheet.formulas}</td>
-                    <td className="px-3 py-2.5">
-                      <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border ${st.style}`}>
-                        {st.icon} {sheet.status}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5 font-mono text-[#6C6880] text-[10px]">{sheet.updated}</td>
-                    <td className="px-3 py-2.5">
-                      <button className="text-[#6C3BFF] hover:text-[#5a2fe0]" title="Preview sheet">
-                        <Eye size={13} />
+                    {currentSheet.columns.map((_, cIdx) => (
+                      <td key={cIdx} className="p-1 border-r border-[#DED9EA]">
+                        <input
+                          value={row[cIdx] ?? ""}
+                          onChange={(e) => handleCellChange(rIdx, cIdx, e.target.value)}
+                          className="w-full px-2 py-1 bg-transparent text-xs text-[#17152B] outline-none focus:bg-[#FFF9F2] focus:ring-1 focus:ring-[#6C3BFF] rounded transition-all"
+                        />
+                      </td>
+                    ))}
+                    <td className="p-2 text-center">
+                      <button
+                        onClick={() => handleDeleteRow(rIdx)}
+                        className="text-[#6C6880] hover:text-[#FF3B4F] transition-colors"
+                      >
+                        <Trash2 size={13} />
                       </button>
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Right — validation panel + preview */}
-      <div className="w-72 shrink-0 bg-white border-l border-[#DED9EA] overflow-y-auto">
-        {/* Readiness */}
-        <div className="px-4 py-4 border-b border-[#DED9EA]">
-          <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider mb-2">Readiness</div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="flex-1 h-2 bg-[#F4F1FA] rounded-full overflow-hidden">
-              <div className={`h-full rounded-full ${readyPct >= 90 ? "bg-[#19A974]" : readyPct >= 70 ? "bg-[#FFC928]" : "bg-[#FF3B4F]"}`} style={{ width: `${readyPct}%` }} />
-            </div>
-            <span className="font-mono text-xs font-semibold">{readyPct}%</span>
-          </div>
-          {errorCount > 0 && <p className="text-[10px] text-[#FF3B4F] flex items-center gap-1"><XCircle size={10} /> {errorCount} blocking error(s)</p>}
-          {warnCount > 0 && <p className="text-[10px] text-[#FFC928] flex items-center gap-1"><AlertTriangle size={10} /> {warnCount} warning(s)</p>}
-        </div>
-
-        {/* Validation items */}
-        <div className="px-4 py-3 border-b border-[#DED9EA]">
-          <div className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider mb-2">Validation</div>
-          <div className="space-y-1.5">
-            {[
-              { label: "Probability pools valid", ok: false, note: "Sheet 20: total = 98% (not 100%)" },
-              { label: "All formula references", ok: true, note: "183 formulas resolved" },
-              { label: "Currency IDs consistent", ok: true, note: "5 currencies, 0 conflicts" },
-              { label: "Unapproved assumptions", ok: false, note: "3 Draft assumptions in Sheet 02" },
-              { label: "Missing units on values", ok: true },
-              { label: "Analytics events defined", ok: false, note: "Ghost Hunter system missing events" },
-            ].map((item) => (
-              <div key={item.label} className={`flex items-start gap-2 text-[10px] ${item.ok ? "text-[#19A974]" : "text-[#FF3B4F]"}`}>
-                {item.ok ? <CheckCircle size={11} className="shrink-0 mt-0.5" /> : <XCircle size={11} className="shrink-0 mt-0.5" />}
-                <div>
-                  <div className="font-medium">{item.label}</div>
-                  {item.note && <div className="text-[#6C6880]">{item.note}</div>}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Sheet preview */}
-        {activeSheet && (
-          <div className="px-4 py-3">
-            <div className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider mb-2">
-              Preview: {activeSheet.num}_{activeSheet.name}
-            </div>
-            <div className="text-[10px] text-[#6C6880] mb-2 font-mono">= Income(B2) * IncomeMultiplier^(B2-1)</div>
-            <div className="overflow-x-auto border border-[#DED9EA] rounded-lg">
-              <table className="text-[9px] font-mono">
-                {PREVIEW_CELLS.map((row, ri) => (
-                  <tr key={ri} className={ri === 0 ? "bg-[#F4F1FA] font-semibold" : ""}>
-                    {row.map((cell, ci) => (
-                      <td key={ci} className="px-2 py-1 border-b border-r border-[#DED9EA] whitespace-nowrap text-[#17152B]">
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
                 ))}
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Export history */}
-        <div className="px-4 py-3 border-t border-[#DED9EA]">
-          <div className="text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider mb-2">Export History</div>
-          <div className="space-y-2">
-            {exportHistory.map((h) => (
-              <div key={h.version} className="flex items-center gap-2">
-                <CheckCircle size={11} className="text-[#19A974] shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="text-[10px] font-semibold text-[#17152B] font-mono">{h.version}</div>
-                  <div className="text-[9px] text-[#6C6880]">{h.date} · {h.author} · {h.format}</div>
-                </div>
-                <button onClick={() => onToast("success", "Re-downloading", `${h.version} export`)} className="text-[#6C3BFF] hover:text-[#5a2fe0]">
-                  <Download size={11} />
-                </button>
-              </div>
-            ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-
-      {/* Success Modal */}
-      {successModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
-          <div className="bg-white rounded-2xl border border-[#DED9EA] shadow-2xl w-[440px] p-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-[#EDFAF4] flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={32} className="text-[#19A974]" />
-            </div>
-            <h3 className="font-bold text-xl text-[#17152B] mb-1">Workbook Generated!</h3>
-            <p className="text-sm text-[#6C6880] mb-5">Your Excel workbook is ready to download.</p>
-            <div className="bg-[#F4F1FA] rounded-xl p-4 text-left mb-5 space-y-2">
-              {[
-                { label: "Filename", value: "HauntedHotel_v0.9.3.xlsx" },
-                { label: "File Size", value: "2.4 MB" },
-                { label: "Sheets", value: `${selectedSheets.size} sheets` },
-                { label: "Total Formulas", value: "847" },
-                { label: "Total Rows", value: "2,847" },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between text-xs">
-                  <span className="text-[#6C6880]">{label}</span>
-                  <span className="font-mono font-semibold text-[#17152B]">{value}</span>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <button onClick={() => setSuccessModal(false)} className="flex-1 py-2.5 border border-[#DED9EA] rounded-xl text-sm text-[#6C6880] hover:bg-[#F4F1FA]">
-                Close
-              </button>
-              <button onClick={() => { setSuccessModal(false); onToast("success", "Download started", "HauntedHotel_v0.9.3.xlsx"); }}
-                className="flex-1 py-2.5 bg-[#6C3BFF] text-white rounded-xl text-sm font-semibold hover:bg-[#5a2fe0] flex items-center justify-center gap-2">
-                <Download size={14} /> Download XLSX
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

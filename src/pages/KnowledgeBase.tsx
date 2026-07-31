@@ -1,120 +1,291 @@
-import { useState } from "react";
-import { BookOpen, Upload, CheckCircle, AlertCircle, Clock, Search, FileText, File, ImageIcon, Table } from "lucide-react";
+import { useState, useRef } from "react";
+import {
+  BookOpen, Search, Plus, Save, Cloud, CheckCircle2, FileText, Upload, Download, Trash2, Edit3, X, Tag, Folder
+} from "lucide-react";
+import { useModuleState } from "../services/useModuleState";
 
 interface KnowledgeBaseProps {
   onToast: (type: "success" | "error" | "warning" | "info", title: string, message?: string) => void;
+  projectId?: string;
 }
 
-const SOURCES = [
-  { id: 1, name: "Haunted Hotel GDD v3.2.pdf", type: "GDD", size: "4.2 MB", status: "Approved", facts: 142, assumptions: 28, date: "2026-07-15" },
-  { id: 2, name: "Economy Model Draft.xlsx", type: "Excel", size: "1.1 MB", status: "Approved", facts: 89, assumptions: 14, date: "2026-07-18" },
-  { id: 3, name: "Competitor Analysis Notes.docx", type: "Notes", size: "0.3 MB", status: "Needs Review", facts: 34, assumptions: 22, date: "2026-07-19" },
-  { id: 4, name: "UI Mockups Q2.png", type: "Image", size: "8.7 MB", status: "Approved", facts: 12, assumptions: 3, date: "2026-07-10" },
-  { id: 5, name: "Analytics Schema v2.json", type: "Schema", size: "0.1 MB", status: "Approved", facts: 48, assumptions: 0, date: "2026-07-20" },
-  { id: 6, name: "Idle Game Market Research.pdf", type: "PDF", size: "2.8 MB", status: "Approved", facts: 67, assumptions: 15, date: "2026-07-12" },
+interface KBArticle {
+  id: string;
+  title: string;
+  category: string;
+  tags: string[];
+  lastUpdated: string;
+  author: string;
+  content: string;
+}
+
+const DEFAULT_ARTICLES: KBArticle[] = [
+  {
+    id: "KB-001",
+    title: "Haunted Hotel Economy Design Manifesto",
+    category: "Economy",
+    tags: ["Gold", "Diamonds", "Monetization"],
+    lastUpdated: "Yesterday",
+    author: "Elena R.",
+    content: "The economy balances 3 main sinks against 2 primary faucets. Hard currency converts at 1:100 ratio...",
+  },
+  {
+    id: "KB-002",
+    title: "Ghost Hunter Staff Level & Skill Curves",
+    category: "Progression",
+    tags: ["XP", "Staff", "Upgrades"],
+    lastUpdated: "3 days ago",
+    author: "Marcus T.",
+    content: "Ghost staff members gain XP from active room assignments. Level cap is set to 60 with 5 star evolutions...",
+  },
+  {
+    id: "KB-003",
+    title: "EU Gacha Odds & Pity Compliance Specification",
+    category: "Compliance",
+    tags: ["Legal", "Gacha", "EU"],
+    lastUpdated: "1 week ago",
+    author: "Jordan K.",
+    content: "Must display drop rates on all summon banners. Pity counter is guaranteed at 80 summons...",
+  },
 ];
 
-const STATUS_STYLE: Record<string, string> = {
-  Approved: "bg-[#EDFAF4] text-[#19A974] border-[#C8F0DC]",
-  "Needs Review": "bg-[#FFF8E6] text-[#FFC928] border-[#FFE89A]",
-  Uploading: "bg-[#F4F1FA] text-[#6C6880] border-[#DED9EA]",
-  Failed: "bg-[#FFF0F2] text-[#FF3B4F] border-[#FFB3BB]",
-};
-
-const TYPE_ICON: Record<string, React.ReactNode> = {
-  GDD: <FileText size={16} className="text-[#6C3BFF]" />,
-  Excel: <Table size={16} className="text-[#19A974]" />,
-  Notes: <FileText size={16} className="text-[#19C6D1]" />,
-  Image: <ImageIcon size={16} className="text-[#FFC928]" />,
-  Schema: <File size={16} className="text-[#FF3B4F]" />,
-  PDF: <FileText size={16} className="text-[#6C6880]" />,
-};
-
-export default function KnowledgeBase({ onToast }: KnowledgeBaseProps) {
+export default function KnowledgeBase({ onToast, projectId }: KnowledgeBaseProps) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
-  const [dragging, setDragging] = useState(false);
-  const [sources, setSources] = useState(SOURCES);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    onToast("info", "Processing file…", "Extracting facts, assumptions, and formulas");
+  // Persistent state
+  const [kbState, setKbState, saveNow, saving] = useModuleState(
+    'knowledgeBase',
+    { articles: DEFAULT_ARTICLES },
+    projectId
+  );
+
+  const articles = kbState.articles;
+
+  // Selected article detail
+  const [selectedArticle, setSelectedArticle] = useState<KBArticle | null>(articles[0] || DEFAULT_ARTICLES[0]);
+
+  // Modals
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newArticle, setNewArticle] = useState<Partial<KBArticle>>({
+    title: "", category: "Economy", tags: [], author: "Studio Designer", content: ""
+  });
+  const [tagInput, setTagInput] = useState("");
+
+  const filteredArticles = articles.filter((a) => {
+    const matchesSearch = a.title.toLowerCase().includes(search.toLowerCase()) || a.content.toLowerCase().includes(search.toLowerCase());
+    const matchesCat = selectedCategory === "All" || a.category === selectedCategory;
+    return matchesSearch && matchesCat;
+  });
+
+  const handleAddArticle = () => {
+    if (!newArticle.title || !newArticle.content) {
+      onToast("error", "Missing fields", "Provide title and content");
+      return;
+    }
+    const created: KBArticle = {
+      id: `KB-0${articles.length + 1}`,
+      title: newArticle.title,
+      category: newArticle.category || "General",
+      tags: tagInput ? tagInput.split(",").map((t) => t.trim()) : ["GDD"],
+      lastUpdated: "Just now",
+      author: newArticle.author || "Studio Lead",
+      content: newArticle.content,
+    };
+    setKbState((prev) => ({ ...prev, articles: [created, ...prev.articles] }));
+    setSelectedArticle(created);
+    setShowAddModal(false);
+    setNewArticle({ title: "", category: "Economy", tags: [], author: "Studio Designer", content: "" });
+    setTagInput("");
+    onToast("success", "Article created", `Added "${created.title}" to Knowledge Base`);
   };
 
-  const filtered = sources.filter((s) => s.name.toLowerCase().includes(search.toLowerCase()));
+  const handleDeleteArticle = (id: string) => {
+    setKbState((prev) => ({ ...prev, articles: prev.articles.filter((a) => a.id !== id) }));
+    if (selectedArticle?.id === id) setSelectedArticle(null);
+    onToast("info", "Article deleted", "Removed document from Knowledge Base");
+  };
+
+  // Export .md
+  const handleExportMD = (article: KBArticle) => {
+    const blob = new Blob([`# ${article.title}\n\nCategory: ${article.category}\nAuthor: ${article.author}\n\n${article.content}`], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${article.title.toLowerCase().replace(/\s+/g, "-")}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onToast("success", "Exported MD", "Downloaded article as Markdown");
+  };
+
+  // Import local text/md file
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const text = String(evt.target?.result || "");
+      const created: KBArticle = {
+        id: `KB-0${articles.length + 1}`,
+        title: file.name.replace(/\.[^/.]+$/, ""),
+        category: "Imported Docs",
+        tags: ["Imported"],
+        lastUpdated: "Just now",
+        author: "File Import",
+        content: text,
+      };
+      setKbState((prev) => ({ ...prev, articles: [created, ...prev.articles] }));
+      setSelectedArticle(created);
+      onToast("success", "File Imported", `Loaded "${file.name}" into Knowledge Base`);
+    };
+    reader.readAsText(file);
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FFF9F2] p-5 space-y-5">
-      {/* Upload area */}
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={handleDrop}
-        className={`border-2 border-dashed rounded-[14px] p-8 text-center transition-colors cursor-pointer ${dragging ? "border-[#6C3BFF] bg-[#F4F1FA]" : "border-[#DED9EA] bg-white hover:border-[#6C3BFF] hover:bg-[#F4F1FA]"}`}
-      >
-        <Upload size={28} className="mx-auto text-[#6C3BFF] mb-3" />
-        <p className="text-sm font-semibold text-[#17152B] mb-1">Drop files here or click to upload</p>
-        <p className="text-xs text-[#6C6880]">Supported: GDD (PDF/DOCX), Excel/CSV, Images, JSON schemas, Mechanics notes</p>
-        <div className="flex justify-center gap-2 mt-4 flex-wrap">
-          {["Game Design Documents", "Economy Sheets", "PDFs", "Images", "Analytics Schemas", "Team Decisions"].map((t) => (
-            <span key={t} className="text-[10px] bg-[#F4F1FA] text-[#6C6880] border border-[#DED9EA] px-2 py-1 rounded-full">{t}</span>
+    <div className="flex-1 overflow-hidden flex bg-[#FFF9F2]">
+      {/* Sidebar List */}
+      <div className="w-80 bg-white border-r border-[#DED9EA] flex flex-col shrink-0">
+        <div className="p-4 border-b border-[#DED9EA] space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-[#17152B]">Knowledge Base</h2>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center gap-1 bg-[#6C3BFF] text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg hover:bg-[#5a2fe0]"
+            >
+              <Plus size={13} /> New Doc
+            </button>
+          </div>
+
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C6880]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search documentation…"
+              className="w-full pl-8 pr-3 py-1.5 text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg outline-none focus:border-[#6C3BFF]"
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto divide-y divide-[#DED9EA]">
+          {filteredArticles.map((art) => (
+            <div
+              key={art.id}
+              onClick={() => setSelectedArticle(art)}
+              className={`p-4 cursor-pointer hover:bg-[#F4F1FA]/60 transition-colors ${
+                selectedArticle?.id === art.id ? "bg-[#F4F1FA]" : ""
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-[10px] text-[#6C3BFF] font-semibold">{art.id}</span>
+                <span className="text-[10px] text-[#6C6880]">{art.lastUpdated}</span>
+              </div>
+              <h3 className="font-bold text-xs text-[#17152B] mt-1 line-clamp-1">{art.title}</h3>
+              <p className="text-[11px] text-[#6C6880] line-clamp-2 mt-1">{art.content}</p>
+            </div>
           ))}
         </div>
-      </div>
 
-      {/* Search + table */}
-      <div className="bg-white rounded-[14px] border border-[#DED9EA] overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#DED9EA]">
-          <div className="relative flex-1 max-w-80">
-            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6C6880]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search knowledge sources…"
-              className="w-full pl-8 pr-3 py-2 text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg focus:outline-none focus:border-[#6C3BFF] text-[#17152B]" />
-          </div>
-          <div className="text-xs text-[#6C6880]">{filtered.length} sources</div>
+        <div className="p-3 border-t border-[#DED9EA]">
+          <input type="file" ref={fileInputRef} onChange={handleImportFile} accept=".md,.txt,.json" className="hidden" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full flex items-center justify-center gap-1.5 py-2 border border-[#DED9EA] bg-[#F4F1FA] text-[#6C6880] text-xs font-semibold rounded-xl hover:bg-[#ede8fb]"
+          >
+            <Upload size={13} /> Import .MD / .TXT Document
+          </button>
         </div>
-
-        <table className="w-full text-xs">
-          <thead className="bg-[#F4F1FA]">
-            <tr>
-              {["Source", "Type", "Size", "Facts", "Assumptions", "Status", "Uploaded", "Actions"].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-[10px] font-semibold text-[#6C6880] uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[#DED9EA]">
-            {filtered.map((s) => (
-              <tr key={s.id} className="table-row-hover">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    {TYPE_ICON[s.type] ?? <File size={16} className="text-[#6C6880]" />}
-                    <span className="font-medium text-[#17152B] max-w-[200px] truncate">{s.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-[#6C6880]">{s.type}</td>
-                <td className="px-4 py-3 font-mono text-[#6C6880]">{s.size}</td>
-                <td className="px-4 py-3 font-mono font-semibold text-[#19C6D1]">{s.facts}</td>
-                <td className="px-4 py-3 font-mono text-[#FFC928]">{s.assumptions}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${STATUS_STYLE[s.status] ?? STATUS_STYLE.Uploading}`}>
-                    {s.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-mono text-[10px] text-[#6C6880]">{s.date}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button onClick={() => onToast("info", "Reviewing", `${s.name} — extracted facts loaded`)}
-                      className="text-[10px] text-[#6C3BFF] font-semibold hover:text-[#5a2fe0]">Review</button>
-                    {s.status === "Needs Review" && (
-                      <button onClick={() => { setSources((prev) => prev.map((src) => src.id === s.id ? { ...src, status: "Approved" } : src)); onToast("success", "Source approved", s.name); }}
-                        className="text-[10px] text-[#19A974] font-semibold hover:text-[#148058]">Approve</button>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
+
+      {/* Main Article Reader & Editor */}
+      <div className="flex-1 overflow-y-auto p-6">
+        {selectedArticle ? (
+          <div className="max-w-3xl bg-white border border-[#DED9EA] p-6 rounded-[14px] shadow-sm space-y-5">
+            <div className="flex items-center justify-between border-b border-[#DED9EA] pb-4">
+              <div>
+                <span className="font-mono text-xs text-[#6C3BFF] font-bold">{selectedArticle.id}</span>
+                <h1 className="text-xl font-bold text-[#17152B] mt-1">{selectedArticle.title}</h1>
+                <div className="flex items-center gap-3 mt-1 text-xs text-[#6C6880]">
+                  <span>Author: {selectedArticle.author}</span>
+                  <span>· Updated: {selectedArticle.lastUpdated}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleExportMD(selectedArticle)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#6C3BFF] bg-[#F4F1FA] border border-[#DED9EA] rounded-xl hover:bg-[#ede8fb]"
+                >
+                  <Download size={13} /> Export .MD
+                </button>
+                <button
+                  onClick={() => handleDeleteArticle(selectedArticle.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#FF3B4F] bg-[#FFF0F2] rounded-xl hover:bg-[#ffe5e8]"
+                >
+                  <Trash2 size={13} /> Delete
+                </button>
+              </div>
+            </div>
+
+            <textarea
+              value={selectedArticle.content}
+              onChange={(e) => {
+                const updated = { ...selectedArticle, content: e.target.value };
+                setSelectedArticle(updated);
+                setKbState((prev) => ({
+                  ...prev,
+                  articles: prev.articles.map((a) => (a.id === updated.id ? updated : a)),
+                }));
+              }}
+              rows={14}
+              className="w-full text-xs text-[#17152B] bg-[#F4F1FA] border border-transparent rounded-xl p-4 resize-none focus:outline-none focus:bg-white focus:border-[#6C3BFF] font-mono leading-relaxed"
+            />
+          </div>
+        ) : (
+          <div className="flex items-center justify-center h-full text-xs text-[#6C6880]">
+            Select an article from the sidebar or create a new document
+          </div>
+        )}
+      </div>
+
+      {/* Add Article Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-bold text-base">New Documentation Article</h3>
+              <button onClick={() => setShowAddModal(false)} className="text-[#6C6880]">
+                <X size={16} />
+              </button>
+            </div>
+            <input
+              placeholder="Article Title (e.g. Boss Fight Mechanics Spec)"
+              value={newArticle.title}
+              onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
+              className="w-full p-2 text-xs border rounded-lg"
+            />
+            <input
+              placeholder="Category (e.g. Systems, Economy, Compliance)"
+              value={newArticle.category}
+              onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value })}
+              className="w-full p-2 text-xs border rounded-lg"
+            />
+            <textarea
+              placeholder="Article Markdown Content..."
+              value={newArticle.content}
+              onChange={(e) => setNewArticle({ ...newArticle, content: e.target.value })}
+              rows={6}
+              className="w-full p-2 text-xs border rounded-lg resize-none"
+            />
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setShowAddModal(false)} className="flex-1 py-2 text-xs border rounded-lg">Cancel</button>
+              <button onClick={handleAddArticle} className="flex-1 py-2 text-xs bg-[#6C3BFF] text-white rounded-lg">Save Article</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

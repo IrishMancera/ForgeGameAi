@@ -2,14 +2,14 @@ import Stripe from 'stripe';
 import { config } from '../config.js';
 import { v4 as uuid } from 'uuid';
 
-const stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2022-11-15' });
+const stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2023-10-16' });
 
 export async function createStripeCustomer(email: string): Promise<Stripe.Customer> {
   return stripe.customers.create({ email });
 }
 
 export async function createCheckoutSession(customerId: string, planId: string): Promise<Stripe.Checkout.Session> {
-  const prices = {
+  const prices: Record<string, string> = {
     solo: 'price_1K0XSQJNpaTj2TZhM9NvZQ4W',
     studio: 'price_1K0XSQJNpaTj2TZh47oW2lVj',
     enterprise: 'price_1K0XSQJNpaTj2TZhO0ZXw3iK',

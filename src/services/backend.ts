@@ -63,12 +63,12 @@ const fallbackSnapshot: BackendSnapshot = {
 
 export async function getBackendSnapshot(): Promise<BackendSnapshot> {
   try {
-    const response = await apiFetch<{ projects: Array<{ name: string; genre?: string; systemHealth: number; blueprintComplete: number; criticalRisks: number; openDecisions: number; }>; }>(`/api/projects`);
+    const response = await apiFetch<{ projects: Array<{ id: number; name: string; genre?: string; systemHealth: number; blueprintComplete: number; criticalRisks: number; openDecisions: number; }>; }>(`/api/projects`);
     const project = response.projects[0];
     if (!project) return fallbackSnapshot;
 
     return {
-      projectId: project.id,
+      projectId: String(project.id),
       projectName: project.name,
       gameGenre: project.genre || 'Hybrid-Casual Tycoon',
       systemStatus: {

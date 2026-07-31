@@ -1,67 +1,81 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { generateAIRecommendation, callOpenAI, buildAIMessage } from '../services/aiService.js';
+import { aiOrchestrator } from '../ai/orchestrator.js';
+import { planner } from '../ai/planner.js';
+import { toolExecutor, REGISTERED_TOOLS } from '../ai/toolExecutor.js';
 import { getDatabase } from '../models/schema.js';
-import { v4 as uuid } from 'uuid';
 import { z } from 'zod';
 
 const router = Router();
 
-const promptSchema = z.object({
-  projectId: z.string().uuid(),
-  prompt: z.string().min(5),
+const chatSchema = z.object({
+  projectId: z.string().default('default-project'),
+  prompt: z.string().min(1),
+  activeWorkspace: z.string().default('command-center'),
 });
 
-const feedbackSchema = z.object({
-  projectId: z.string().uuid(),
-  recommendationId: z.string().uuid(),
-  action: z.enum(['apply', 'reject', 'edit']),
+const toolSchema = z.object({
+  toolName: z.string().min(1),
+  inputs: z.record(z.unknown()).default({}),
+  projectId: z.string().default('default-project'),
+  activeWorkspace: z.string().default('command-center'),
 });
 
 router.use(authMiddleware);
 
-router.post('/recommendation', async (req, res) => {
-  try {
-    const data = promptSchema.parse(req.body);
-    const recommendation = await generateAIRecommendation(data.projectId, data.prompt);
-
-    const db = getDatabase();
-    await db.run(
-      `INSERT INTO recommendations (id, projectId, agent, type, title, description, affectedSystems, confidence, status)
-       VALUES (?, ?, ?, 'recommendation', ?, ?, ?, ?, 'pending')`,
-      [recommendation.id, data.projectId, recommendation.agent, recommendation.title, recommendation.description, JSON.stringify(recommendation.affectedSystems), recommendation.confidence]
-    );
-
-    res.status(201).json({ recommendation });
-  } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
-  }
-});
-
+// POST /api/ai/chat -> Full AI OS Orchestration Execution
 router.post('/chat', async (req, res) => {
   try {
-    const data = promptSchema.parse(req.body);
-    const aiText = await callOpenAI(data.prompt);
-    const message = buildAIMessage(aiText, 'assistant');
-    res.json({ message });
+    const { projectId, prompt, activeWorkspace } = chatSchema.parse(req.body);
+    const result = await aiOrchestrator.executePlan(projectId, prompt, activeWorkspace);
+    res.json(result);
   } catch (error) {
-    res.status(500).json({ error: error instanceof Error ? error.message : 'AI request failed' });
+    res.status(500).json({ error: error instanceof Error ? error.message : 'AI Orchestration failed' });
   }
 });
 
-router.post('/feedback', async (req, res) => {
+// POST /api/ai/plan -> Generate Execution Plan only
+router.post('/plan', async (req, res) => {
   try {
-    const data = feedbackSchema.parse(req.body);
-    const db = getDatabase();
-
-    const recommendation = await db.get('SELECT * FROM recommendations WHERE id = ? AND projectId = ?', [data.recommendationId, data.projectId]);
-    if (!recommendation) return res.status(404).json({ error: 'Recommendation not found' });
-
-    await db.run('UPDATE recommendations SET status = ? WHERE id = ?', [data.action === 'apply' ? 'applied' : data.action === 'reject' ? 'rejected' : 'edited', data.recommendationId]);
-
-    res.json({ success: true, recommendationId: data.recommendationId, status: data.action });
+    const { projectId, prompt, activeWorkspace } = chatSchema.parse(req.body);
+    const agentPlan = planner.createPlan(projectId, prompt, activeWorkspace);
+    res.status(201).json({ plan: agentPlan });
   } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid feedback request' });
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Plan generation failed' });
+  }
+});
+
+// POST /api/ai/tool -> Direct Tool Execution with Role & Safety Verification
+router.post('/tool', async (req, res) => {
+  try {
+    const { toolName, inputs, projectId, activeWorkspace } = toolSchema.parse(req.body);
+    const toolDef = REGISTERED_TOOLS.find((t) => t.name === toolName);
+
+    if (!toolDef) {
+      return res.status(404).json({ error: `Tool ${toolName} not registered` });
+    }
+
+    if (toolDef.requiresApproval) {
+      return res.json({
+        requiresApproval: true,
+        toolName,
+        message: `Tool ${toolName} requires explicit proposal approval before execution.`,
+        proposal: {
+          id: `prop-${Date.now()}`,
+          projectId,
+          agentRole: 'architect',
+          summary: `Proposal for ${toolName}`,
+          diff: { module: activeWorkspace, before: {}, after: inputs },
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        },
+      });
+    }
+
+    const result = await toolExecutor.executeTool(toolName, inputs, projectId, activeWorkspace);
+    res.json({ result });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Tool execution failed' });
   }
 });
 
