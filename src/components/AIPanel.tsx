@@ -101,8 +101,17 @@ export default function AIPanel({ onToast, collapsed, onToggle, snapshot, projec
     setInput("");
     setLoading(true);
 
+    const currentSnapshot = (() => {
+      try {
+        const raw = localStorage.getItem(`gameforge_${activeWorkspace}`);
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    })();
+
     try {
-      const { plan } = await executeAIChat(promptText, activeProjectId, activeWorkspace);
+      const { plan } = await executeAIChat(promptText, activeProjectId, activeWorkspace, currentSnapshot);
       setPlans((prev) => [...prev, plan]);
 
       if (plan.proposal) {
@@ -283,6 +292,7 @@ export default function AIPanel({ onToast, collapsed, onToggle, snapshot, projec
           <div className="flex flex-wrap gap-1.5">
             {SUGGESTED_PROMPTS.map((p) => (
               <button
+                type="button"
                 key={p}
                 onClick={() => handleSendPrompt(p)}
                 className="rounded-lg border border-[#DED9EA] bg-white px-2.5 py-1 text-[11px] text-[#6C6880] hover:border-[#6C3BFF] hover:text-[#6C3BFF] transition-colors"
@@ -299,11 +309,17 @@ export default function AIPanel({ onToast, collapsed, onToggle, snapshot, projec
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSendPrompt(input)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleSendPrompt(input);
+                }
+              }}
               placeholder="Ask AI OS to balance, design, or audit systems..."
               className="w-full bg-transparent text-xs outline-none text-[#17152B] placeholder:text-[#6C6880]"
             />
             <button
+              type="button"
               onClick={() => handleSendPrompt(input)}
               disabled={loading || !input.trim()}
               className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#6C3BFF] text-white hover:bg-[#5a2fe0] transition-colors disabled:opacity-50"

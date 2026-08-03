@@ -64,12 +64,13 @@ export interface StructuredAIResponse {
 export async function executeAIChat(
   prompt: string,
   projectId: string = 'default-project',
-  activeWorkspace: string = 'command-center'
+  activeWorkspace: string = 'command-center',
+  moduleSnapshot?: unknown
 ): Promise<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }> {
   try {
-    return await apiFetch<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }>('/ai/chat', {
+    return await apiFetch<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }>('/api/ai/chat', {
       method: 'POST',
-      body: JSON.stringify({ prompt, projectId, activeWorkspace }),
+      body: ({ prompt, projectId, activeWorkspace, moduleSnapshot }),
     });
   } catch {
     // Fallback simulation if backend server is offline
@@ -134,9 +135,9 @@ export async function executeAIChat(
 
 export async function applyProposal(proposalId: string, projectId: string = 'default-project'): Promise<{ success: boolean; versionNumber: number }> {
   try {
-    return await apiFetch<{ success: boolean; versionNumber: number }>('/projects/apply', {
+    return await apiFetch<{ success: boolean; versionNumber: number }>('/api/projects/apply', {
       method: 'POST',
-      body: JSON.stringify({ proposalId, projectId }),
+      body: ({ proposalId, projectId }),
     });
   } catch {
     return { success: true, versionNumber: Date.now() % 100 };
@@ -145,9 +146,9 @@ export async function applyProposal(proposalId: string, projectId: string = 'def
 
 export async function rollbackVersion(versionNumber: number, projectId: string = 'default-project'): Promise<{ success: boolean; currentVersion: number }> {
   try {
-    return await apiFetch<{ success: boolean; currentVersion: number }>('/projects/rollback', {
+    return await apiFetch<{ success: boolean; currentVersion: number }>('/api/projects/rollback', {
       method: 'POST',
-      body: JSON.stringify({ versionNumber, projectId }),
+      body: ({ versionNumber, projectId }),
     });
   } catch {
     return { success: true, currentVersion: versionNumber + 1 };
@@ -156,7 +157,7 @@ export async function rollbackVersion(versionNumber: number, projectId: string =
 
 export async function fetchProjectHistory(projectId: string = 'default-project'): Promise<{ versions: any[]; proposals: any[] }> {
   try {
-    return await apiFetch<{ versions: any[]; proposals: any[] }>(`/projects/history?projectId=${projectId}`);
+    return await apiFetch<{ versions: any[]; proposals: any[] }>(`/api/projects/history?projectId=${projectId}`);
   } catch {
     return { versions: [], proposals: [] };
   }

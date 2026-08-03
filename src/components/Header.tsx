@@ -889,7 +889,7 @@ export default function Header({
 
       {/* ─── CREATE PROJECT MODAL ────────────────────────────────────────────── */}
       {showCreateProjectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl border border-[#DED9EA] p-6 w-full max-w-md shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -966,7 +966,7 @@ export default function Header({
 
       {/* ─── CREATE VERSION SNAPSHOT MODAL ────────────────────────────────────── */}
       {showCreateVersionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl border border-[#DED9EA] p-6 w-full max-w-md shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

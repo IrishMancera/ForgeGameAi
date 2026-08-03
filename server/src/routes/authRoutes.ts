@@ -1,11 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { loginUser, registerUser, getUserById } from '../services/authService.js';
+import { loginUser, registerUser, getUserById, googleUserAuth } from '../services/authService.js';
 import { authMiddleware } from '../middleware/auth.js';
 import { requestPasswordReset, resetPassword } from "../services/passwordResetService.js";
 
 const forgotPasswordSchema = z.object({ email: z.string().email(), });
 const resetPasswordSchema = z.object({ token: z.string(), password: z.string().min(8), });
+const googleSchema = z.object({
+  idToken: z.string(),
+  email: z.string().email(),
+  displayName: z.string().optional(),
+  photoURL: z.string().optional(),
+});
 const router = Router();
 
 const registerSchema = z.object({
@@ -37,6 +43,16 @@ router.post('/login', async (req, res) => {
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
+  }
+});
+
+router.post('/google', async (req, res) => {
+  try {
+    const data = googleSchema.parse(req.body);
+    const result = await googleUserAuth(data.email, data.displayName, data.photoURL);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Google authentication failed' });
   }
 });
 

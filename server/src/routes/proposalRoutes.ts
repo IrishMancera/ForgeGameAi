@@ -45,6 +45,35 @@ router.post('/apply', async (req, res) => {
     // 3. Mark proposal applied
     await db.run(`UPDATE proposals SET status = 'applied', appliedAt = CURRENT_TIMESTAMP WHERE id = ?`, [proposalId]);
 
+    // 3b. Apply proposed state diff to module_states table so modules hydrate the change
+    try {
+      const diffObj = typeof proposal.diff === 'string' ? JSON.parse(proposal.diff) : proposal.diff;
+      if (diffObj && diffObj.module && diffObj.after) {
+        const moduleNameMap: Record<string, string> = {
+          'Economy': 'economy-lab',
+          'economy-lab': 'economy-lab',
+          'Progression': 'progression',
+          'progression': 'progression',
+          'Systems': 'systems',
+          'systems': 'systems',
+          'Audit': 'audit',
+          'audit': 'audit',
+          'CommandCenter': 'command-center',
+          'command-center': 'command-center',
+        };
+        const targetModule = moduleNameMap[diffObj.module] || diffObj.module.toLowerCase();
+        const payloadStr = JSON.stringify(diffObj.after);
+        const existingMod = await db.get(`SELECT id FROM module_states WHERE projectId = ? AND moduleName = ?`, [projectId, targetModule]);
+        if (existingMod) {
+          await db.run(`UPDATE module_states SET data = ?, updatedAt = CURRENT_TIMESTAMP WHERE id = ?`, [payloadStr, existingMod.id]);
+        } else {
+          await db.run(`INSERT INTO module_states (id, projectId, moduleName, data) VALUES (?, ?, ?, ?)`, [`mod-${Date.now()}`, projectId, targetModule, payloadStr]);
+        }
+      }
+    } catch (err) {
+      console.warn('[PROPOSAL APPLY] Failed to update module_states table:', err);
+    }
+
     // 4. Create Version History record
     const versionId = `ver-${Date.now()}-${uuid().substring(0, 5)}`;
     await db.run(

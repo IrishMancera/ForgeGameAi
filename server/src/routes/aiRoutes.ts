@@ -12,6 +12,7 @@ const chatSchema = z.object({
   projectId: z.string().default('default-project'),
   prompt: z.string().min(1),
   activeWorkspace: z.string().default('command-center'),
+  moduleSnapshot: z.unknown().optional(),
 });
 
 const toolSchema = z.object({
@@ -26,8 +27,8 @@ router.use(authMiddleware);
 // POST /api/ai/chat -> Full AI OS Orchestration Execution
 router.post('/chat', async (req, res) => {
   try {
-    const { projectId, prompt, activeWorkspace } = chatSchema.parse(req.body);
-    const result = await aiOrchestrator.executePlan(projectId, prompt, activeWorkspace);
+    const { projectId, prompt, activeWorkspace, moduleSnapshot } = chatSchema.parse(req.body);
+    const result = await aiOrchestrator.executePlan(projectId, prompt, activeWorkspace, moduleSnapshot);
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'AI Orchestration failed' });

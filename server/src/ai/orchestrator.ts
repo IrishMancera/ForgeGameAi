@@ -7,17 +7,20 @@ import { responseFormatter } from './responseFormatter';
 import { AgentPlan, StructuredAIResponse, AIProposal, ToolExecutionResult } from './types';
 import { getDatabase } from '../models/schema';
 
+import { chatCompletion } from './llmClient.js';
+
 export class AIOrchestrator {
   public async executePlan(
     projectId: string,
     prompt: string,
-    activeWorkspace: string
+    activeWorkspace: string,
+    moduleSnapshot?: unknown
   ): Promise<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }> {
     // 1. Save user prompt to conversation memory
     await memoryService.addConversationTurn(projectId, 'user', prompt, { activeWorkspace });
 
-    // 2. Build full context (Snapshot, RAG, Dependency Graph, Memory)
-    const context = await contextBuilder.buildContext(projectId, activeWorkspace, prompt);
+    // 2. Build full context (Snapshot, RAG, Dependency Graph, Memory, Live Module Data)
+    const context = await contextBuilder.buildContext(projectId, activeWorkspace, prompt, moduleSnapshot);
 
     // 3. Generate structured execution plan via Planner
     const plan = planner.createPlan(projectId, prompt, activeWorkspace);
@@ -33,6 +36,9 @@ export class AIOrchestrator {
 
       const agentConfig = agentRegistry.getAgent(step.agentRole);
       const systemPrompt = agentRegistry.getSystemPrompt(step.agentRole);
+
+      // Try LLM execution if OpenAI key is configured
+      const llmOutput = await chatCompletion(systemPrompt, prompt, JSON.stringify(context));
 
       // Execute relevant tool for this agent role
       const primaryTool = agentConfig?.allowedTools[0] || 'getProjectSnapshot';
@@ -66,7 +72,7 @@ export class AIOrchestrator {
 
       step.status = 'completed';
       step.durationMs = Date.now() - startTime;
-      step.output = `Executed ${step.agentRole.toUpperCase()} verification against ${activeWorkspace} dependencies (${step.durationMs}ms).`;
+      step.output = llmOutput || `Executed ${step.agentRole.toUpperCase()} verification against ${activeWorkspace} dependencies (${step.durationMs}ms).`;
       step.toolCalls = [toolRes];
     }
 

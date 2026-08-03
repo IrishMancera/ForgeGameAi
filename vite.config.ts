@@ -40,11 +40,22 @@ export default defineConfig(({ mode }) => {
           secure: false,
         },
       },
+      headers: {
+        // Allow Firebase OAuth popup window communication.
+        // 'unsafe-none' lets window.closed checks work across origins
+        // (overrides Vite's default restrictive COOP policy).
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      },
       watch: { ignored: ['**/.figma/**'] },
     },
     preview: {
       host: '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
+      headers: {
+        'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+        'Cross-Origin-Embedder-Policy': 'unsafe-none',
+      },
     },
   }
 })

@@ -1,3 +1,5 @@
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../config/firebase';
 import { apiFetch } from './api';
 
 export interface UserProfile {
@@ -175,3 +177,32 @@ export async function fetchCurrentUser(): Promise<{ user: UserProfile }> {
     return { user: storedUser };
   }
 }
+
+export async function loginWithGoogle(): Promise<AuthResponse> {
+  try {
+    const userCredential = await signInWithPopup(auth, googleProvider);
+    const firebaseUser = userCredential.user;
+    const idToken = await firebaseUser.getIdToken();
+
+    const result = await apiFetch<AuthResponse>('/api/auth/google', {
+      method: 'POST',
+      body: {
+        idToken,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        photoURL: firebaseUser.photoURL,
+      },
+    });
+
+    syncLocalUser(result.user, result.token);
+    return result;
+  } catch (error) {
+    if (!shouldUseLocalFallback() || !isNetworkError(error)) throw error;
+
+    const fakeEmail = 'google.user@forge.ai';
+    const response = buildLocalAuthResponse(fakeEmail, 'google-oauth', 'Google', 'User');
+    syncLocalUser(response.user, response.token);
+    return response;
+  }
+}
+
