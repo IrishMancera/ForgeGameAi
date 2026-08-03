@@ -2,7 +2,10 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { loginUser, registerUser, getUserById } from '../services/authService.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requestPasswordReset, resetPassword } from "../services/passwordResetService.js";
 
+const forgotPasswordSchema = z.object({ email: z.string().email(), });
+const resetPasswordSchema = z.object({ token: z.string(), password: z.string().min(8), });
 const router = Router();
 
 const registerSchema = z.object({
@@ -45,6 +48,36 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.json({ user });
   } catch (error) {
     res.status(500).json({ error: 'Could not fetch user' });
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = forgotPasswordSchema.parse(req.body);
+    await requestPasswordReset(email);
+    res.json({
+      message: "If an account exists, a reset email has been sent."
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : "Invalid Request",
+    });
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { token, password } = resetPasswordSchema.parse(req.body);
+
+    await resetPassword(token, password);
+
+    res.json({
+      message: "Password reset successfully.",
+    });
+  } catch (error) {
+    res.status(400).json({
+      error: error instanceof Error ? error.message : "Password reset failed.",
+    });
   }
 });
 

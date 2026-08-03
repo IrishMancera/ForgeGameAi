@@ -72,19 +72,6 @@ export default function Sidebar({ currentPage, onNavigate, snapshot }: SidebarPr
         )}
       </div>
 
-      {!collapsed && (
-        <div className="mx-3 mt-3 rounded-2xl border border-[#6C3BFF]/20 bg-gradient-to-br from-[#6C3BFF]/10 via-white to-[#19C6D1]/10 p-3 shadow-[0_12px_30px_rgba(108,59,255,0.12)]">
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-[#19A974]" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#6C3BFF]">
-              {snapshot?.systemStatus.mode ?? "Live Ops Mode"}
-            </span>
-          </div>
-          <div className="mt-2 text-sm font-semibold text-[#17152B]">{snapshot?.projectName ?? "Haunted Hotel"}</div>
-          <div className="mt-1 text-[11px] text-[#6C6880]">{snapshot?.systemStatus.syncStatus ?? "Syncing 5 agents"}</div>
-        </div>
-      )}
-
       <nav className="flex-1 overflow-y-auto py-3">
         {/* Website link */}
         <button

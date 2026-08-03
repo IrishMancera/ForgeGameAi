@@ -99,3 +99,19 @@ export async function getUserById(userId: string): Promise<User | null> {
     createdAt: user.createdAt,
   };
 }
+
+export async function forgotPassword(email: string) {
+  const response = await fetch("/api/auth/forgot-password", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send reset email.");
+  }
+
+  return response.json();
+}

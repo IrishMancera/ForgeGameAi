@@ -2,15 +2,14 @@ import Stripe from 'stripe';
 import { config } from '../config.js';
 import { v4 as uuid } from 'uuid';
 
-// Initialize Stripe without a strict typed apiVersion to avoid TS literal mismatch
-const stripe = new Stripe(config.stripe.secretKey as string, { apiVersion: undefined as any });
+const stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2023-10-16' as any });
 
 export async function createStripeCustomer(email: string): Promise<Stripe.Customer> {
   return stripe.customers.create({ email });
 }
 
-export async function createCheckoutSession(customerId: string, planId: 'solo' | 'studio' | 'enterprise'): Promise<Stripe.Checkout.Session> {
-  const prices: Record<'solo' | 'studio' | 'enterprise', string> = {
+export async function createCheckoutSession(customerId: string, planId: string): Promise<Stripe.Checkout.Session> {
+  const prices: Record<string, string> = {
     solo: 'price_1K0XSQJNpaTj2TZhM9NvZQ4W',
     studio: 'price_1K0XSQJNpaTj2TZh47oW2lVj',
     enterprise: 'price_1K0XSQJNpaTj2TZhO0ZXw3iK',

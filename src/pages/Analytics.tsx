@@ -1,201 +1,263 @@
 import { useState } from "react";
-import {
-  BarChart, Bar, LineChart, Line, AreaChart, Area, FunnelChart, Funnel,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell
-} from "recharts";
-import { BarChart2, Info } from "lucide-react";
-import { ANALYTICS_DATA, RETENTION_DATA } from "../data/mockData";
-
-const TABS = ["Retention", "Onboarding Funnel", "Feature Adoption", "Economy", "Monetization"];
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
+import { TrendingUp, Users, DollarSign, Activity, Download, Plus, Save, Cloud, CheckCircle2, Filter, X } from "lucide-react";
+import { useModuleState } from "../services/useModuleState";
 
 interface AnalyticsProps {
   onToast: (type: "success" | "error" | "warning" | "info", title: string, message?: string) => void;
+  projectId?: string;
 }
 
-const FILTERS = {
-  dateRange: ["Last 7 days", "Last 30 days", "Last 90 days", "Custom"],
-  platform: ["All Platforms", "iOS", "Android"],
-  country: ["All Countries", "US", "UK", "DE", "JP", "KR"],
-  segment: ["All Players", "New Users", "D7+ Players", "Payers", "Non-payers"],
-};
+interface TelemetryEvent {
+  id: string;
+  eventName: string;
+  category: string;
+  dailyVolume: string;
+  triggerCondition: string;
+}
 
-export default function Analytics({ onToast }: AnalyticsProps) {
-  const [tab, setTab] = useState("Retention");
-  const [dataMode, setDataMode] = useState<"forecast" | "observed">("observed");
-  const [filters, setFilters] = useState({ dateRange: "Last 30 days", platform: "All Platforms", country: "All Countries", segment: "All Players" });
+const DEFAULT_EVENTS: TelemetryEvent[] = [
+  { id: "EVT-01", eventName: "gacha_summon_pull", category: "Monetization", dailyVolume: "142,500", triggerCondition: "Player spends hard currency on recruit spin" },
+  { id: "EVT-02", eventName: "room_upgrade_complete", category: "Progression", dailyVolume: "890,200", triggerCondition: "Player completes room level upgrade" },
+  { id: "EVT-03", eventName: "ghost_staff_level_up", category: "Meta Loop", dailyVolume: "310,000", triggerCondition: "Player levels up ghost staff member" },
+];
+
+export default function Analytics({ onToast, projectId }: AnalyticsProps) {
+  const [timeRange, setTimeRange] = useState<"7D" | "30D" | "90D">("30D");
+  const [cohortFilter, setCohortFilter] = useState<"All" | "Whales" | "Casuals">("All");
+
+  // Persistent state
+  const [analyticsState, setAnalyticsState, saveNow, saving] = useModuleState(
+    'analytics',
+    {
+      events: DEFAULT_EVENTS,
+    },
+    projectId
+  );
+
+  const events = analyticsState.events;
+
+  // Add event modal
+  const [showAddEvent, setShowAddEvent] = useState(false);
+  const [newEvent, setNewEvent] = useState<Partial<TelemetryEvent>>({
+    eventName: "", category: "Progression", dailyVolume: "10,000", triggerCondition: ""
+  });
+
+  // Calculate dynamic chart data according to timeRange and cohortFilter multiplier
+  const multiplier = cohortFilter === "Whales" ? 3.5 : cohortFilter === "Casuals" ? 0.4 : 1.0;
+  const daysCount = timeRange === "7D" ? 7 : timeRange === "30D" ? 15 : 30;
+
+  const chartData = Array.from({ length: daysCount }, (_, i) => ({
+    date: `Day ${i + 1}`,
+    arpu: Number((1.25 * multiplier + Math.sin(i) * 0.15).toFixed(2)),
+    d1Retention: Math.round(42 * (cohortFilter === "Whales" ? 1.2 : 0.95)),
+    activeUsers: Math.round((12000 + i * 450) * multiplier),
+  }));
+
+  const handleAddEvent = () => {
+    if (!newEvent.eventName) {
+      onToast("error", "Missing name", "Enter event name");
+      return;
+    }
+    const created: TelemetryEvent = {
+      id: `EVT-0${events.length + 1}`,
+      eventName: newEvent.eventName,
+      category: newEvent.category || "Progression",
+      dailyVolume: newEvent.dailyVolume || "5,000",
+      triggerCondition: newEvent.triggerCondition || "Event triggered by player action",
+    };
+    setAnalyticsState((prev) => ({ ...prev, events: [...prev.events, created] }));
+    setShowAddEvent(false);
+    setNewEvent({ eventName: "", category: "Progression", dailyVolume: "10,000", triggerCondition: "" });
+    onToast("success", "Event registered", `Added telemetry event ${created.eventName}`);
+  };
+
+  const handleExportCSV = () => {
+    let csv = "Date,ARPU,D1Retention,ActiveUsers\n";
+    chartData.forEach((r) => {
+      csv += `${r.date},${r.arpu},${r.d1Retention}%,${r.activeUsers}\n`;
+    });
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `live-analytics-telemetry.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    onToast("success", "Exported CSV", "Analytics metrics exported");
+  };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col bg-[#FFF9F2]">
-      {/* Mode toggle + filters */}
-      <div className="bg-white border-b border-[#DED9EA] px-5 py-2.5 flex items-center gap-3 flex-wrap">
-        <div className="flex items-center gap-1 bg-[#F4F1FA] rounded-lg p-1 shrink-0">
-          {(["observed", "forecast"] as const).map((m) => (
-            <button key={m} onClick={() => setDataMode(m)}
-              className={`px-3 py-1.5 rounded-md text-[10px] font-semibold capitalize transition-colors ${dataMode === m ? "bg-white text-[#17152B] shadow-sm" : "text-[#6C6880]"}`}>
-              {m === "observed" ? "📊 Observed" : "🔮 Forecast"}
-            </button>
-          ))}
+    <div className="flex-1 overflow-y-auto bg-[#FFF9F2] p-5 space-y-5">
+      {/* Header toolbar */}
+      <div className="flex items-center justify-between bg-white border border-[#DED9EA] px-5 py-3 rounded-[14px]">
+        <div>
+          <h1 className="text-lg font-bold text-[#17152B]">Live Analytics & Telemetry</h1>
+          <p className="text-xs text-[#6C6880]">Real-time player ARPU, retention tracking, and custom telemetry events</p>
         </div>
 
-        {dataMode === "forecast" && (
-          <div className="flex items-center gap-1.5 text-[10px] text-[#FFC928] bg-[#FFF8E6] border border-[#FFE89A] px-2.5 py-1 rounded-full">
-            <Info size={11} /> Showing forecasted data — not observed player behavior
-          </div>
-        )}
-
-        {Object.entries(filters).map(([key, val]) => (
-          <select
-            key={key}
-            value={val}
-            onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
-            className="text-xs bg-[#F4F1FA] border border-[#DED9EA] rounded-lg px-2.5 py-1.5 text-[#17152B] focus:outline-none focus:border-[#6C3BFF]"
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[#6C6880] bg-white border border-[#DED9EA] rounded-xl hover:bg-[#F4F1FA]"
           >
-            {FILTERS[key as keyof typeof FILTERS].map((o) => <option key={o}>{o}</option>)}
-          </select>
-        ))}
-
-        <button onClick={() => onToast("success", "CSV exported", "Analytics data downloaded")}
-          className="ml-auto text-xs text-[#6C3BFF] hover:text-[#5a2fe0] font-medium">
-          ↓ CSV
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b border-[#DED9EA] px-5 flex items-center gap-1">
-        {TABS.map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-3 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${tab === t ? "border-[#6C3BFF] text-[#6C3BFF]" : "border-transparent text-[#6C6880] hover:text-[#17152B]"}`}>
-            {t}
+            <Download size={13} /> Export CSV
           </button>
-        ))}
+          <button
+            onClick={async () => { await saveNow(); onToast("success", "Analytics saved", "Synced custom telemetry setup"); }}
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-[#6C3BFF] bg-[#F4F1FA] border border-[#DED9EA] rounded-xl hover:bg-[#ede8fb]"
+          >
+            {saving ? <Cloud size={13} className="animate-pulse" /> : <Save size={13} />} Save Config
+          </button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-5">
-        {tab === "Retention" && (
-          <div className="space-y-5">
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: dataMode === "observed" ? "D1 Observed" : "D1 Forecast", value: dataMode === "observed" ? "39%" : "42%", color: "text-[#6C3BFF]" },
-                { label: dataMode === "observed" ? "D7 Observed" : "D7 Forecast", value: dataMode === "observed" ? "16%" : "18%", color: "text-[#19C6D1]" },
-                { label: dataMode === "observed" ? "D30 Observed" : "D30 Forecast", value: dataMode === "observed" ? "7%" : "8%", color: "text-[#19A974]" },
-              ].map((m) => (
-                <div key={m.label} className="bg-white rounded-[14px] border border-[#DED9EA] p-4" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-                  <div className={`text-3xl font-bold font-mono ${m.color}`}>{m.value}</div>
-                  <div className="text-xs text-[#6C6880] mt-1">{m.label}</div>
-                </div>
-              ))}
-            </div>
+      {/* Filter controls bar */}
+      <div className="flex items-center justify-between bg-white border border-[#DED9EA] px-4 py-2.5 rounded-[14px]">
+        <div className="flex items-center gap-2">
+          <Filter size={14} className="text-[#6C3BFF]" />
+          <span className="text-xs font-semibold text-[#17152B]">Filters:</span>
 
-            <div className="bg-white rounded-[14px] border border-[#DED9EA] p-5" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-              <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider mb-4">D1–D30 Retention Curve</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={RETENTION_DATA} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="obsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#19C6D1" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#19C6D1" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="frcGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6C3BFF" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#6C3BFF" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#F4F1FA" />
-                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#6C6880" }} />
-                  <YAxis tick={{ fontSize: 10, fill: "#6C6880" }} unit="%" />
-                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #DED9EA" }} formatter={(v: number) => [`${v}%`]} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Area type="monotone" dataKey="observed" name="Observed" stroke="#19C6D1" fill="url(#obsGrad)" strokeWidth={2} dot={false} />
-                  <Area type="monotone" dataKey="forecast" name="Forecast" stroke="#6C3BFF" fill="url(#frcGrad)" strokeWidth={2} strokeDasharray="5 5" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
-
-        {tab === "Onboarding Funnel" && (
-          <div className="bg-white rounded-[14px] border border-[#DED9EA] p-5" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-            <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider mb-4">Onboarding Funnel</div>
-            <div className="space-y-2">
-              {ANALYTICS_DATA.onboardingFunnel.map((step, i) => {
-                const pct = Math.round((step.value / ANALYTICS_DATA.onboardingFunnel[0].value) * 100);
-                const drop = i > 0 ? Math.round(((ANALYTICS_DATA.onboardingFunnel[i - 1].value - step.value) / ANALYTICS_DATA.onboardingFunnel[i - 1].value) * 100) : 0;
-                return (
-                  <div key={step.stage} className="flex items-center gap-3">
-                    <div className="w-36 text-xs text-[#17152B] font-medium shrink-0">{step.stage}</div>
-                    <div className="flex-1 h-7 bg-[#F4F1FA] rounded-lg overflow-hidden relative">
-                      <div
-                        className="h-full rounded-lg transition-all"
-                        style={{ width: `${pct}%`, background: `linear-gradient(90deg, #6C3BFF, #19C6D1)` }}
-                      />
-                      <span className="absolute inset-0 flex items-center justify-end pr-3 text-[10px] font-mono font-bold text-[#17152B]">
-                        {step.value.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="w-12 text-right text-[10px] font-mono text-[#6C6880]">{pct}%</div>
-                    {drop > 0 && <div className="w-16 text-right text-[10px] font-mono text-[#FF3B4F]">–{drop}%</div>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {tab === "Feature Adoption" && (
-          <div className="bg-white rounded-[14px] border border-[#DED9EA] p-5" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-            <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider mb-4">Feature Adoption Rate</div>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={ANALYTICS_DATA.featureAdoption} layout="vertical" margin={{ top: 0, right: 8, left: 60, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F4F1FA" horizontal={false} />
-                <XAxis type="number" unit="%" tick={{ fontSize: 10, fill: "#6C6880" }} domain={[0, 100]} />
-                <YAxis dataKey="feature" type="category" tick={{ fontSize: 11, fill: "#6C6880" }} width={90} />
-                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #DED9EA" }} formatter={(v: number) => [`${v}%`, "Adoption"]} />
-                <Bar dataKey="adoption" radius={[0, 4, 4, 0]} barSize={18}>
-                  {ANALYTICS_DATA.featureAdoption.map((entry, index) => (
-                    <Cell key={index} fill={entry.adoption >= 60 ? "#6C3BFF" : entry.adoption >= 40 ? "#FFC928" : "#FF3B4F"} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {tab === "Economy" && (
-          <div className="bg-white rounded-[14px] border border-[#DED9EA] p-5" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-            <div className="text-xs font-semibold text-[#6C6880] uppercase tracking-wider mb-4">Weekly Coin Flow — Earned vs Spent</div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={ANALYTICS_DATA.currencyFlow} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#F4F1FA" />
-                <XAxis dataKey="day" tick={{ fontSize: 11, fill: "#6C6880" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#6C6880" }} />
-                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #DED9EA" }} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="earned" name="Coins Earned" fill="#19C6D1" radius={[4, 4, 0, 0]} barSize={22} />
-                <Bar dataKey="spent" name="Coins Spent" fill="#6C3BFF" radius={[4, 4, 0, 0]} barSize={22} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
-
-        {tab === "Monetization" && (
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: "Conversion Rate", value: "2.8%", change: "+0.3pp", color: "text-[#19A974]" },
-              { label: "ARPDAU", value: "$0.18", change: "+12%", color: "text-[#19A974]" },
-              { label: "LTV (90d)", value: "$3.40", change: "+8%", color: "text-[#19A974]" },
-              { label: "Payer Share", value: "4.1%", change: "+0.5pp", color: "text-[#19A974]" },
-              { label: "ARPPU", value: "$4.39", change: "–2%", color: "text-[#FF3B4F]" },
-              { label: "Gacha Spend Share", value: "71%", change: "⚠ High", color: "text-[#FF3B4F]" },
-            ].map((m) => (
-              <div key={m.label} className="bg-white rounded-[14px] border border-[#DED9EA] p-4" style={{ boxShadow: "0 2px 12px rgba(108,59,255,0.06)" }}>
-                <div className={`text-2xl font-bold font-mono ${m.color}`}>{m.value}</div>
-                <div className="text-xs text-[#6C6880] mt-0.5">{m.label}</div>
-                <div className={`text-[10px] mt-1 font-medium ${m.color}`}>{m.change} vs last period</div>
-              </div>
+          <div className="flex gap-1 bg-[#F4F1FA] p-1 rounded-lg">
+            {(["7D", "30D", "90D"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setTimeRange(t)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${timeRange === t ? "bg-white text-[#17152B] shadow-sm" : "text-[#6C6880]"}`}
+              >
+                {t}
+              </button>
             ))}
           </div>
-        )}
+
+          <div className="flex gap-1 bg-[#F4F1FA] p-1 rounded-lg">
+            {(["All", "Whales", "Casuals"] as const).map((c) => (
+              <button
+                key={c}
+                onClick={() => setCohortFilter(c)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${cohortFilter === c ? "bg-[#6C3BFF] text-white" : "text-[#6C6880]"}`}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <span className="text-xs text-[#6C6880] font-mono">Cohort Mode: {cohortFilter} ({timeRange})</span>
       </div>
+
+      {/* Stat KPI Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-white border border-[#DED9EA] p-4 rounded-xl shadow-sm">
+          <span className="text-xs text-[#6C6880]">Average Revenue Per User (ARPU)</span>
+          <div className="text-2xl font-bold text-[#17152B] mt-1 font-mono">${(1.25 * multiplier).toFixed(2)}</div>
+        </div>
+        <div className="bg-white border border-[#DED9EA] p-4 rounded-xl shadow-sm">
+          <span className="text-xs text-[#6C6880]">Day 1 Retention</span>
+          <div className="text-2xl font-bold text-[#19A974] mt-1 font-mono">{Math.round(42 * (cohortFilter === "Whales" ? 1.2 : 0.95))}%</div>
+        </div>
+        <div className="bg-white border border-[#DED9EA] p-4 rounded-xl shadow-sm">
+          <span className="text-xs text-[#6C6880]">Active Daily Players (DAU)</span>
+          <div className="text-2xl font-bold text-[#6C3BFF] mt-1 font-mono">{Math.round(18400 * multiplier).toLocaleString()}</div>
+        </div>
+        <div className="bg-white border border-[#DED9EA] p-4 rounded-xl shadow-sm">
+          <span className="text-xs text-[#6C6880]">ARPPU (Paying Players)</span>
+          <div className="text-2xl font-bold text-[#FFC928] mt-1 font-mono">${(14.80 * multiplier).toFixed(2)}</div>
+        </div>
+      </div>
+
+      {/* Analytics Chart */}
+      <div className="bg-white border border-[#DED9EA] p-5 rounded-[14px] shadow-sm space-y-3">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-[#6C6880]">ARPU & Active Player Trend</h3>
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={chartData}>
+            <defs>
+              <linearGradient id="arpuGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#19C6D1" stopOpacity={0.2} />
+                <stop offset="95%" stopColor="#19C6D1" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#F4F1FA" />
+            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+            <YAxis tick={{ fontSize: 10 }} />
+            <Tooltip />
+            <Area type="monotone" dataKey="arpu" stroke="#19C6D1" fill="url(#arpuGrad)" strokeWidth={2} name="ARPU ($)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Custom Telemetry Events Registry */}
+      <div className="bg-white border border-[#DED9EA] p-5 rounded-[14px] shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-[#6C6880]">Custom Telemetry Events</h3>
+          <button
+            onClick={() => setShowAddEvent(true)}
+            className="flex items-center gap-1 bg-[#6C3BFF] text-white text-xs font-semibold px-3 py-1.5 rounded-xl hover:bg-[#5a2fe0]"
+          >
+            <Plus size={13} /> Add Telemetry Event
+          </button>
+        </div>
+
+        <div className="bg-white border border-[#DED9EA] rounded-xl overflow-hidden">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-[#F4F1FA] text-[#6C6880] border-b border-[#DED9EA] uppercase tracking-wider">
+                <th className="p-3">ID</th>
+                <th className="p-3">Event Name</th>
+                <th className="p-3">Category</th>
+                <th className="p-3">Daily Volume</th>
+                <th className="p-3">Trigger Condition</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#DED9EA]">
+              {events.map((e) => (
+                <tr key={e.id} className="hover:bg-[#F4F1FA]/50">
+                  <td className="p-3 font-mono text-[#6C3BFF]">{e.id}</td>
+                  <td className="p-3 font-bold text-[#17152B] font-mono">{e.eventName}</td>
+                  <td className="p-3"><span className="px-2 py-0.5 bg-[#F4F1FA] rounded-full text-[10px] font-semibold">{e.category}</span></td>
+                  <td className="p-3 font-mono font-bold text-[#19A974]">{e.dailyVolume}</td>
+                  <td className="p-3 text-[#6C6880]">{e.triggerCondition}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Add Event Modal */}
+      {showAddEvent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-3">
+            <h3 className="font-bold text-base">Add Telemetry Event</h3>
+            <input
+              placeholder="Event Name (e.g. boss_fight_victory)"
+              value={newEvent.eventName}
+              onChange={(e) => setNewEvent({ ...newEvent, eventName: e.target.value })}
+              className="w-full p-2 text-xs border rounded-lg"
+            />
+            <select
+              value={newEvent.category}
+              onChange={(e) => setNewEvent({ ...newEvent, category: e.target.value })}
+              className="w-full p-2 text-xs border rounded-lg"
+            >
+              <option value="Progression">Progression</option>
+              <option value="Monetization">Monetization</option>
+              <option value="Meta Loop">Meta Loop</option>
+              <option value="Social">Social</option>
+            </select>
+            <input
+              placeholder="Expected Daily Volume"
+              value={newEvent.dailyVolume}
+              onChange={(e) => setNewEvent({ ...newEvent, dailyVolume: e.target.value })}
+              className="w-full p-2 text-xs border rounded-lg"
+            />
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setShowAddEvent(false)} className="flex-1 py-2 text-xs border rounded-lg">Cancel</button>
+              <button onClick={handleAddEvent} className="flex-1 py-2 text-xs bg-[#6C3BFF] text-white rounded-lg">Register Event</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

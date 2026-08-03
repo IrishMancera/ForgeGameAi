@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
-import { createProject, getProject, getUserProjects, updateProject, deleteProject } from '../services/projectService.js';
+import { createProject, getProject, getUserProjects, updateProject, updateProjectModule, deleteProject } from '../services/projectService.js';
 
 const router = Router();
 
@@ -51,6 +51,33 @@ router.get('/:projectId', async (req, res) => {
     res.json({ project });
   } catch (error) {
     res.status(500).json({ error: 'Failed to load project' });
+  }
+});
+
+router.get('/:projectId/modules/:moduleName', async (req, res) => {
+  try {
+    const project = await getProject(req.params.projectId, req.user!.userId);
+    if (!project) return res.status(404).json({ error: 'Project not found' });
+
+    const moduleName = req.params.moduleName as keyof typeof project;
+    const data = project[moduleName] ?? null;
+    res.json({ module: req.params.moduleName, data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to load project module' });
+  }
+});
+
+router.put('/:projectId/modules/:moduleName', async (req, res) => {
+  try {
+    const project = await updateProjectModule(
+      req.params.projectId,
+      req.user!.userId,
+      req.params.moduleName,
+      req.body
+    );
+    res.json({ project, module: req.params.moduleName, data: req.body });
+  } catch (error) {
+    res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
   }
 });
 

@@ -7,7 +7,10 @@ import projectRoutes from './routes/projectRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import billingRoutes from './routes/billingRoutes.js';
 import exportRoutes from './routes/exportRoutes.js';
+import { seedInitialData } from './services/seedService.js';
 import bodyParser from 'body-parser';
+
+import proposalRoutes from './routes/proposalRoutes.js';
 
 const app = express();
 
@@ -15,6 +18,7 @@ app.use(cors({ origin: config.cors.origin, credentials: true }));
 app.use(bodyParser.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', proposalRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/billing', billingRoutes);
@@ -30,8 +34,9 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
 });
 
 initializeDatabase(config.databaseUrl)
-  .then(() => {
-    app.listen(config.port, () => {
+  .then(async () => {
+    await seedInitialData();
+    app.listen(config.port, '0.0.0.0', () => {
       console.log(`Server running on http://localhost:${config.port}`);
     });
   })
