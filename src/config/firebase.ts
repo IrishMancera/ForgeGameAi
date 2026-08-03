@@ -5,13 +5,13 @@ import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCq7IUDmtJmA9kjR-aNgEuztww2VyA-aR8",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gameforge-75200.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gameforge-75200",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gameforge-75200.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "908152352541",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:908152352541:web:a411f10fad5cb4aa733bf4",
-  measurementId: "G-VG5TNWHC7S"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
