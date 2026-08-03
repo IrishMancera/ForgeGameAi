@@ -27,6 +27,12 @@ router.post('/checkout', async (req, res) => {
     }
 
     const session = await createCheckoutSession(customerId, data.plan);
+    await db.run(
+      `INSERT INTO billingHistory (id, userId, subscriptionId, amount, currency, status, invoiceId, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [uuid(), user.id, null, 0, 'usd', 'pending', null, `Checkout session ${session.id} for ${data.plan}`]
+    );
+
     res.json({ sessionUrl: session.url });
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });

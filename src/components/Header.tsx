@@ -8,6 +8,7 @@ import {
 import * as XLSX from "xlsx";
 import type { BackendSnapshot } from "../services/backend";
 import type { UserProfile } from "../services/auth";
+import { downloadWorkbook } from "../services/export";
 import type { AppProject } from "../services/project";
 import { SYSTEMS, RETENTION_DATA, ECONOMY_BALANCE, RISK_DATA, AUDIT_FINDINGS } from "../data/mockData";
 
@@ -751,7 +752,36 @@ export default function Header({
         {exportOpen && (
           <div className="absolute right-0 top-full mt-1.5 w-60 overflow-hidden rounded-2xl border border-[#DED9EA] bg-white shadow-2xl z-50 p-1 space-y-0.5">
             <button
-              onClick={handleExportXLSX}
+              onClick={async () => {
+                setExportOpen(false);
+                if (!snapshot?.projectId) {
+                  onToast('warning', 'No project selected', 'Create or open a project before exporting.');
+                  return;
+                }
+
+                try {
+                  onToast('info', 'Exporting workbook', 'Your XLSX workbook is being generated.');
+                  const result = await downloadWorkbook(snapshot.projectId, [
+                    { key: 'core', label: 'Core Systems', rows: 8 },
+                    { key: 'economy', label: 'Economy', rows: 14 },
+                    { key: 'progression', label: 'Progression', rows: 10 },
+                    { key: 'psychology', label: 'Psychology', rows: 6 },
+                    { key: 'simulation', label: 'Simulation', rows: 6 },
+                  ]);
+
+                  const blobUrl = URL.createObjectURL(result.blob);
+                  const anchor = document.createElement('a');
+                  anchor.href = blobUrl;
+                  anchor.download = result.fileName;
+                  document.body.appendChild(anchor);
+                  anchor.click();
+                  anchor.remove();
+                  URL.revokeObjectURL(blobUrl);
+                  onToast('success', 'Workbook ready', `${result.fileName} downloaded.`);
+                } catch (error) {
+                  onToast('error', 'Export failed', error instanceof Error ? error.message : 'Unable to generate workbook');
+                }
+              }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-left text-xs font-semibold text-[#17152B] transition-colors hover:bg-[#F4F1FA] rounded-xl"
             >
               <FileSpreadsheet size={15} className="text-[#19A974]" />

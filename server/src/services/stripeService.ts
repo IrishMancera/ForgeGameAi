@@ -2,7 +2,7 @@ import Stripe from 'stripe';
 import { config } from '../config.js';
 import { v4 as uuid } from 'uuid';
 
-const stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2023-10-16' });
+const stripe = new Stripe(config.stripe.secretKey, { apiVersion: '2023-10-16' as any });
 
 export async function createStripeCustomer(email: string): Promise<Stripe.Customer> {
   return stripe.customers.create({ email });

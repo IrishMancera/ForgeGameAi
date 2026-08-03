@@ -87,6 +87,7 @@ export default function CommandCenter({ onToast, projectId, onProjectCreated }: 
   const [project, setProject] = useState<AppProject | null>(null);
   const [projectLoading, setProjectLoading] = useState(true);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [exportingWorkbook, setExportingWorkbook] = useState(false);
   const [retentionView, setRetentionView] = useState<"forecast" | "observed">("forecast");
   const [riskFilter, setRiskFilter] = useState<string>("All");
 
