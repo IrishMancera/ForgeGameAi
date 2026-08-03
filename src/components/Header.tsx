@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import type { BackendSnapshot } from "../services/backend";
 import type { UserProfile } from "../services/auth";
+import { downloadWorkbook } from "../services/export";
 
 interface HeaderProps {
   onToast: (type: "success" | "error" | "warning" | "info", title: string, message?: string) => void;
@@ -123,11 +124,46 @@ export default function Header({ onToast, unsavedChanges, snapshot, user, onSign
           <ChevronDown size={11} />
         </button>
         {exportOpen && (
-          <div className="absolute right-0 top-full mt-1 w-52 overflow-hidden rounded-2xl border border-[#DED9EA] bg-white shadow-2xl z-50">
-            {['Generate XLSX Workbook', 'Export as JSON Pack', 'Export CSV Bundle', 'Google Sheets Ready'].map((opt) => (
+          <div className="absolute right-0 top-full mt-1 w-60 overflow-hidden rounded-2xl border border-[#DED9EA] bg-white shadow-2xl z-50">
+            <button
+              onClick={async () => {
+                setExportOpen(false);
+                if (!snapshot?.projectId) {
+                  onToast('warning', 'No project selected', 'Create or open a project before exporting.');
+                  return;
+                }
+
+                try {
+                  onToast('info', 'Exporting workbook', 'Your XLSX workbook is being generated.');
+                  const result = await downloadWorkbook(snapshot.projectId, [
+                    { key: 'core', label: 'Core Systems', rows: 8 },
+                    { key: 'economy', label: 'Economy', rows: 14 },
+                    { key: 'progression', label: 'Progression', rows: 10 },
+                    { key: 'psychology', label: 'Psychology', rows: 6 },
+                    { key: 'simulation', label: 'Simulation', rows: 6 },
+                  ]);
+
+                  const blobUrl = URL.createObjectURL(result.blob);
+                  const anchor = document.createElement('a');
+                  anchor.href = blobUrl;
+                  anchor.download = result.fileName;
+                  document.body.appendChild(anchor);
+                  anchor.click();
+                  anchor.remove();
+                  URL.revokeObjectURL(blobUrl);
+                  onToast('success', 'Workbook ready', `${result.fileName} downloaded.`);
+                } catch (error) {
+                  onToast('error', 'Export failed', error instanceof Error ? error.message : 'Unable to generate workbook');
+                }
+              }}
+              className="w-full px-4 py-2.5 text-left text-xs text-[#17152B] transition-colors hover:bg-[#F4F1FA]"
+            >
+              Generate XLSX Workbook
+            </button>
+            {['Export as JSON Pack', 'Export CSV Bundle', 'Google Sheets Ready'].map((opt) => (
               <button
                 key={opt}
-                onClick={() => { setExportOpen(false); onToast("success", "Export started", `${opt} — generating...`); }}
+                onClick={() => { setExportOpen(false); onToast('info', 'Export option selected', `${opt} is available soon.`); }}
                 className="w-full px-4 py-2.5 text-left text-xs text-[#17152B] transition-colors hover:bg-[#F4F1FA]"
               >
                 {opt}

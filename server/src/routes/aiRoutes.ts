@@ -41,9 +41,18 @@ router.post('/recommendation', async (req, res) => {
 router.post('/chat', async (req, res) => {
   try {
     const data = promptSchema.parse(req.body);
+    const userMessage = buildAIMessage(data.prompt, 'user');
     const aiText = await callOpenAI(data.prompt);
-    const message = buildAIMessage(aiText, 'assistant');
-    res.json({ message });
+    const assistantMessage = buildAIMessage(aiText, 'assistant');
+
+    const db = getDatabase();
+    await db.run(
+      `INSERT INTO aiConversations (id, projectId, userId, messages)
+       VALUES (?, ?, ?, ?)`,
+      [uuid(), data.projectId, req.user!.userId, JSON.stringify([userMessage, assistantMessage])]
+    );
+
+    res.json({ message: aiText });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : 'AI request failed' });
   }

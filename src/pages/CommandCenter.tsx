@@ -10,6 +10,7 @@ import {
   LayoutGrid, Zap
 } from "lucide-react";
 import { getProjects, createProject, type AppProject } from "../services/project";
+import { downloadWorkbook } from "../services/export";
 import {
   PROJECT, RETENTION_DATA, ECONOMY_BALANCE, EXCITEMENT_CURVE,
   RISK_DATA, KPI_FORECAST, PROGRESSION_LEVELS, AUDIT_FINDINGS
@@ -50,6 +51,7 @@ export default function CommandCenter({ onToast }: CommandCenterProps) {
   const [project, setProject] = useState<AppProject | null>(null);
   const [projectLoading, setProjectLoading] = useState(true);
   const [creatingProject, setCreatingProject] = useState(false);
+  const [exportingWorkbook, setExportingWorkbook] = useState(false);
   const [retentionView, setRetentionView] = useState<"forecast" | "observed">("forecast");
   const [selectedSheets, setSelectedSheets] = useState({
     core: true, economy: true, progression: true, psychology: true, simulation: true,
@@ -84,6 +86,44 @@ export default function CommandCenter({ onToast }: CommandCenterProps) {
       onToast('error', 'Create project failed', error instanceof Error ? error.message : 'Please try again');
     } finally {
       setCreatingProject(false);
+    }
+  };
+
+  const handleGenerateWorkbook = async () => {
+    if (!project) {
+      onToast('warning', 'No project', 'Create a project before exporting a workbook.');
+      return;
+    }
+
+    setExportingWorkbook(true);
+    try {
+      const sheets = Object.entries(selectedSheets)
+        .filter(([, enabled]) => enabled)
+        .map(([key]) => {
+          switch (key) {
+            case 'core': return { key: 'core', label: 'Core Systems', rows: 8 };
+            case 'economy': return { key: 'economy', label: 'Economy', rows: 14 };
+            case 'progression': return { key: 'progression', label: 'Progression', rows: 10 };
+            case 'psychology': return { key: 'psychology', label: 'Psychology', rows: 6 };
+            case 'simulation': return { key: 'simulation', label: 'Simulation', rows: 6 };
+            default: return { key, label: key, rows: 6 };
+          }
+        });
+
+      const result = await downloadWorkbook(project.id, sheets);
+      const url = URL.createObjectURL(result.blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = result.fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      onToast('success', 'Workbook downloaded', `${result.fileName} is ready.`);
+    } catch (error) {
+      onToast('error', 'Export failed', error instanceof Error ? error.message : 'Unable to export workbook');
+    } finally {
+      setExportingWorkbook(false);
     }
   };
 
@@ -365,10 +405,11 @@ export default function CommandCenter({ onToast }: CommandCenterProps) {
           title="Workbook Generator"
           action={
             <button
-              onClick={() => onToast("success", "Workbook generated!", "HauntedHotel_v0.9.3.xlsx — 34 sheets, 2,847 rows")}
-              className="flex items-center gap-1.5 text-[10px] bg-[#6C3BFF] text-white px-3 py-1.5 rounded-lg font-medium hover:bg-[#5a2fe0] transition-colors"
+              onClick={handleGenerateWorkbook}
+              disabled={exportingWorkbook}
+              className={`flex items-center gap-1.5 text-[10px] text-white px-3 py-1.5 rounded-lg font-medium transition-colors ${exportingWorkbook ? 'bg-[#6C3BFF]/60 cursor-not-allowed' : 'bg-[#6C3BFF] hover:bg-[#5a2fe0]'}`}
             >
-              <Download size={11} /> Generate XLSX
+              <Download size={11} /> {exportingWorkbook ? 'Exporting…' : 'Generate XLSX'}
             </button>
           }
         >
