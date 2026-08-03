@@ -7,7 +7,7 @@ export async function chatCompletion(
 ): Promise<string | null> {
   const apiKey = config.gemini.apiKey || process.env.GEMINI_API_KEY;
   console.log('[DEBUG] gemini apiKey present:', !!apiKey, 'length:', apiKey?.length, 'preview:', apiKey?.slice(0, 6));
-  if (!apiKey || apiKey.trim() === '' || apiKey.includes('GEMINI_API_KEY')) {
+  if (!apiKey || apiKey.trim() === '' || apiKey.includes('')) {
     console.log('[DEBUG] Hit the early-return guard — this is why you get fallback text');
     // Return null to signal that fallback/rule-based execution should be used
     return null;
