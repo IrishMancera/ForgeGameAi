@@ -1,8 +1,8 @@
-import { AIContext } from './types';
-import { ragEngine } from './ragEngine';
-import { memoryService } from './memory';
-import { dependencyGraph } from './dependencyGraph';
-import { getDatabase } from '../models/schema';
+import { AIContext } from './types.js';
+import { ragEngine } from './ragEngine.js';
+import { memoryService } from './memory.js';
+import { dependencyGraph } from './dependencyGraph.js';
+import { getDatabase } from '../models/schema.js';
 
 export class ContextBuilder {
   public async buildContext(

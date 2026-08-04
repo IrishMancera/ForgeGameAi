@@ -1,7 +1,7 @@
-import { ToolDefinition, ToolExecutionResult } from './types';
-import { ragEngine } from './ragEngine';
-import { dependencyGraph } from './dependencyGraph';
-import { getDatabase } from '../models/schema';
+import { ToolDefinition, ToolExecutionResult } from './types.js';
+import { ragEngine } from './ragEngine.js';
+import { dependencyGraph } from './dependencyGraph.js';
+import { getDatabase } from '../models/schema.js';
 
 export const REGISTERED_TOOLS: ToolDefinition[] = [
   // READ TOOLS

@@ -1,4 +1,4 @@
-import { getDatabase } from '../models/schema';
+import { getDatabase } from '../models/schema.js';
 
 export interface MemoryEntry {
   id: string;
