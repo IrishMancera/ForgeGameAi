@@ -8,7 +8,7 @@ dotenv.config();
 export const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001'),
-  databaseUrl: process.env.DATABASE_URL || './gameforge.db',
+  databaseUrl: process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.POSTGRES_PRISMA_URL || process.env.POSTGRES_URL_NON_POOLING || './gameforge.db',
   jwtSecret: process.env.JWT_SECRET || 'dev-secret-key',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   stripe: {
