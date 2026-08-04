@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   User, Key, Users, CreditCard, ShieldCheck, Bell, Save,
   Plus, Trash2, Eye, EyeOff, Copy, Check, Cloud, ChevronDown,
@@ -8,11 +8,14 @@ import {
 } from "lucide-react";
 import { useModuleState } from "../services/useModuleState";
 
+import type { UserProfile } from "../services/auth";
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SettingsProps {
   onToast: (type: "success" | "error" | "warning" | "info", title: string, message?: string) => void;
   projectId?: string;
+  user?: UserProfile | null;
 }
 
 type ApiScope = "read" | "write" | "admin";
@@ -413,23 +416,23 @@ const DEFAULT_KEYS: ApiKeyItem[] = [
 ];
 
 const DEFAULT_TEAM: TeamMember[] = [
-  { id: "TM-01", name: "Jordan K.", email: "jordan@phantomgames.com", role: "Owner", status: "Active", isYou: true },
+  { id: "TM-01", name: "Ellie L.", email: "ellie@phantomgames.com", role: "Owner", status: "Active", isYou: true },
   { id: "TM-02", name: "Sarah M.", email: "sarah@phantomgames.com", role: "Admin", status: "Active" },
   { id: "TM-03", name: "Alex R.", email: "alex@phantomgames.com", role: "Editor", status: "Active" },
   { id: "TM-04", name: "Casey L.", email: "casey@external.io", role: "Viewer", status: "Pending" },
 ];
 
-export default function Settings({ onToast, projectId }: SettingsProps) {
+export default function Settings({ onToast, projectId, user }: SettingsProps) {
   const [tab, setTab] = useState<SettingsTab>("profile");
 
   const [settingsState, setSettingsState, saveNow, saving] = useModuleState(
     "settings",
     {
       profile: {
-        displayName: "Jordan K.",
-        email: "jordan@phantomgames.com",
+        displayName: user ? `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email : "Ellie L.",
+        email: user?.email || "ellie@phantomgames.com",
         studioName: "Studio Phantom Games",
-        role: "Lead Systems Architect",
+        role: user?.role === "admin" ? "Admin" : "Lead Systems Architect",
         timezone: "UTC+08:00 — Philippine Standard Time",
         locale: "en-US (English)",
         emailAlerts: true,
@@ -449,6 +452,21 @@ export default function Settings({ onToast, projectId }: SettingsProps) {
   const apiKeys   = settingsState.apiKeys  as ApiKeyItem[];
   const team      = settingsState.team     as TeamMember[];
   const twoFAEnabled = settingsState.twoFAEnabled as boolean;
+
+  // Sync state with logged-in user profile dynamically when it updates
+  useEffect(() => {
+    if (user) {
+      setSettingsState(prev => ({
+        ...prev,
+        profile: {
+          ...prev.profile,
+          displayName: `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email,
+          email: user.email,
+          role: user.role === "admin" ? "Admin" : prev.profile.role,
+        }
+      }));
+    }
+  }, [user, setSettingsState]);
 
   // Track unsaved changes
   const [unsaved, setUnsaved] = useState(false);
@@ -527,20 +545,56 @@ export default function Settings({ onToast, projectId }: SettingsProps) {
   };
 
   // Team
-  const handleInvite = (name: string, email: string, role: InviteRole) => {
+  const handleInvite = async (name: string, email: string, role: InviteRole) => {
     if (team.some(m => m.email.toLowerCase() === email.toLowerCase())) {
       onToast("error", "Already a member", `${email} is already in the workspace`);
       return;
     }
-    const member: TeamMember = {
-      id: `TM-${Date.now()}`,
-      name, email,
-      role: role as TeamMember["role"],
-      status: "Pending",
-    };
-    mutate("team", [...team, member]);
     setShowInviteModal(false);
-    onToast("success", "Invitation sent", `${name} will receive an invite to join as ${role}`);
+
+    if (projectId) {
+      try {
+        const inviteResponse = await fetch(`/api/invite/projects/${projectId}/invite`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, role, name }),
+        });
+
+        if (!inviteResponse.ok) {
+          const errData = await inviteResponse.json();
+          throw new Error(errData.error || "Failed to dispatch email");
+        }
+
+        const member: TeamMember = {
+          id: `TM-${Date.now()}`,
+          name, email,
+          role: role as TeamMember["role"],
+          status: "Pending",
+        };
+        const updatedTeam = [...team, member];
+        mutate("team", updatedTeam);
+
+        const nextState = { ...settingsState, team: updatedTeam };
+        await fetch(`/api/projects/${projectId}/modules/settings`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(nextState),
+        });
+
+        onToast("success", "Invitation Sent Successfully", `An invite link has been dispatched to ${email}`);
+      } catch (err) {
+        onToast("error", "Invitation Dispatch Failed", err instanceof Error ? err.message : "Unable to complete action");
+      }
+    } else {
+      const member: TeamMember = {
+        id: `TM-${Date.now()}`,
+        name, email,
+        role: role as TeamMember["role"],
+        status: "Pending",
+      };
+      mutate("team", [...team, member]);
+      onToast("success", "Invitation simulated", `${name} invited (local sandbox mode).`);
+    }
   };
 
   const confirmRemoveMember = (m: TeamMember) => {
@@ -548,10 +602,27 @@ export default function Settings({ onToast, projectId }: SettingsProps) {
       title: "Remove Member",
       message: `Remove ${m.name} (${m.email}) from the workspace? They will lose access immediately.`,
       danger: true,
-      onConfirm: () => {
-        mutate("team", team.filter(x => x.id !== m.id));
-        onToast("info", "Member removed", `${m.name} has been removed`);
+      onConfirm: async () => {
+        const updatedTeam = team.filter(x => x.id !== m.id);
+        mutate("team", updatedTeam);
         setConfirm(null);
+
+        if (projectId) {
+          try {
+            const nextState = { ...settingsState, team: updatedTeam };
+            const response = await fetch(`/api/projects/${projectId}/modules/settings`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(nextState),
+            });
+            if (!response.ok) throw new Error("Failed to save changes");
+            onToast("info", "Member removed", `${m.name} has been removed from workspace.`);
+          } catch (err) {
+            onToast("error", "Failed to save changes", "Please try saving changes manually.");
+          }
+        } else {
+          onToast("info", "Member removed", `${m.name} has been removed (local sandbox mode).`);
+        }
       },
     });
   };

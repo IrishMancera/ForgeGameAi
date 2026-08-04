@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { aiOrchestrator } from '../ai/orchestrator.js';
 import { planner } from '../ai/planner.js';
 import { toolExecutor, REGISTERED_TOOLS } from '../ai/toolExecutor.js';
+import { getProject } from '../services/projectService.js';
 import { getDatabase } from '../models/schema.js';
 import { z } from 'zod';
 
@@ -27,6 +28,12 @@ router.use(authMiddleware);
 router.post('/chat', async (req, res) => {
   try {
     const { projectId, prompt, activeWorkspace } = chatSchema.parse(req.body);
+    
+    const project = await getProject(projectId, req.user!.userId);
+    if (!project) {
+      return res.status(403).json({ error: 'Unauthorized project access' });
+    }
+
     const result = await aiOrchestrator.executePlan(projectId, prompt, activeWorkspace);
     res.json(result);
   } catch (error) {
@@ -38,6 +45,12 @@ router.post('/chat', async (req, res) => {
 router.post('/plan', async (req, res) => {
   try {
     const { projectId, prompt, activeWorkspace } = chatSchema.parse(req.body);
+
+    const project = await getProject(projectId, req.user!.userId);
+    if (!project) {
+      return res.status(403).json({ error: 'Unauthorized project access' });
+    }
+
     const agentPlan = planner.createPlan(projectId, prompt, activeWorkspace);
     res.status(201).json({ plan: agentPlan });
   } catch (error) {
@@ -49,6 +62,12 @@ router.post('/plan', async (req, res) => {
 router.post('/tool', async (req, res) => {
   try {
     const { toolName, inputs, projectId, activeWorkspace } = toolSchema.parse(req.body);
+
+    const project = await getProject(projectId, req.user!.userId);
+    if (!project) {
+      return res.status(403).json({ error: 'Unauthorized project access' });
+    }
+
     const toolDef = REGISTERED_TOOLS.find((t) => t.name === toolName);
 
     if (!toolDef) {
@@ -79,4 +98,34 @@ router.post('/tool', async (req, res) => {
   }
 });
 
+// POST /api/ai/monitor — Protocol 15: Monitor results after approved change
+router.post('/monitor', async (req, res) => {
+  try {
+    const { projectId, proposalId, actualMetrics } = req.body;
+    if (!projectId || !proposalId || !actualMetrics) {
+      return res.status(400).json({ error: 'projectId, proposalId, and actualMetrics are required' });
+    }
+    const project = await getProject(projectId, req.user!.userId);
+    if (!project) return res.status(403).json({ error: 'Unauthorized project access' });
+
+    const result = await aiOrchestrator.monitorAppliedChange(projectId, proposalId, actualMetrics);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error instanceof Error ? error.message : 'Monitoring failed' });
+  }
+});
+
+// GET /api/ai/status — Returns demo mode status for frontend banner
+router.get('/status', async (_req, res) => {
+  const { config } = await import('../config.js');
+  res.json({
+    isDemo: !config.openai?.apiKey,
+    model: config.openai?.apiKey ? 'gpt-4o-mini' : 'demo',
+    message: config.openai?.apiKey
+      ? 'Live AI mode active.'
+      : '⚠️ DEMO MODE — Set OPENAI_API_KEY in server/.env for live analysis.',
+  });
+});
+
 export default router;
+

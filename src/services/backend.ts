@@ -7,7 +7,6 @@ export interface BackendSnapshot {
   systemStatus: {
     mode: string;
     syncStatus: string;
-    uptime: string;
     activeAgents: number;
   };
   liveMetrics: {
@@ -17,65 +16,62 @@ export interface BackendSnapshot {
     decisions: number;
   };
   activity: Array<{
-    id: number;
+    id: string;
     title: string;
     detail: string;
     tone: 'success' | 'info' | 'warning';
+    createdAt?: string;
   }>;
+  isOffline?: boolean;
 }
 
-const fallbackSnapshot: BackendSnapshot = {
-  projectName: 'Haunted Hotel',
-  gameGenre: 'Hybrid-Casual Tycoon',
-  systemStatus: {
-    mode: 'Live Ops Mode',
-    syncStatus: 'Syncing 5 agents',
-    uptime: '99.98%',
-    activeAgents: 5,
-  },
-  liveMetrics: {
-    health: 91,
-    blueprint: 86,
-    risks: 2,
-    decisions: 7,
-  },
-  activity: [
-    {
-      id: 1,
-      title: 'Evolution loop stabilized',
-      detail: 'Economy and retention curves now align for day-7 retention.',
-      tone: 'success',
-    },
-    {
-      id: 2,
-      title: 'Audit scan complete',
-      detail: 'Two high priority issues flagged for player fairness review.',
-      tone: 'warning',
-    },
-    {
-      id: 3,
-      title: 'Simulation refreshed',
-      detail: 'New cohort run with 500 players and live event pacing.',
-      tone: 'info',
-    },
-  ],
-};
-
-export async function getBackendSnapshot(): Promise<BackendSnapshot> {
+/**
+ * Fetches real project snapshot from backend.
+ * Returns { isOffline: true } when backend is unreachable.
+ * NEVER returns hardcoded fake data — caller must handle offline state.
+ */
+export async function getBackendSnapshot(): Promise<BackendSnapshot | null> {
   try {
-    const response = await apiFetch<{ projects: Array<{ id: number; name: string; genre?: string; systemHealth: number; blueprintComplete: number; criticalRisks: number; openDecisions: number; }>; }>(`/api/projects`);
+    const response = await apiFetch<{
+      projects: Array<{
+        id: string;
+        name: string;
+        genre?: string;
+        systemHealth: number;
+        blueprintComplete: number;
+        criticalRisks: number;
+        openDecisions: number;
+      }>;
+    }>('/api/projects');
+
     const project = response.projects[0];
-    if (!project) return fallbackSnapshot;
+    if (!project) return null;
+
+    // Fetch recent audit log for activity feed (real data)
+    let activity: BackendSnapshot['activity'] = [];
+    try {
+      const auditResponse = await apiFetch<{ logs: Array<{ id: string; action: string; details: string; createdAt: string }> }>(
+        `/api/projects/${project.id}/audit?limit=5`
+      );
+      activity = (auditResponse.logs || []).map((log) => ({
+        id: log.id,
+        title: log.action.replace(/_/g, ' '),
+        detail: typeof log.details === 'string' ? log.details : JSON.stringify(log.details).slice(0, 120),
+        tone: log.action.includes('ERROR') ? 'warning' : log.action.includes('APPLIED') ? 'success' : 'info',
+        createdAt: log.createdAt,
+      }));
+    } catch {
+      // Activity feed is non-critical — leave empty on failure
+    }
 
     return {
-      projectId: String(project.id),
+      projectId: project.id,
       projectName: project.name,
-      gameGenre: project.genre || 'Hybrid-Casual Tycoon',
+      gameGenre: project.genre || 'Game Project',
       systemStatus: {
         mode: 'Live Ops Mode',
-        syncStatus: 'Syncing 5 agents',
-        uptime: '99.98%',
-        activeAgents: 5,
+        syncStatus: 'Connected',
+        activeAgents: 10,
       },
       liveMetrics: {
         health: project.systemHealth,
@@ -83,9 +79,10 @@ export async function getBackendSnapshot(): Promise<BackendSnapshot> {
         risks: project.criticalRisks,
         decisions: project.openDecisions,
       },
-      activity: fallbackSnapshot.activity,
+      activity,
     };
   } catch {
-    return fallbackSnapshot;
+    // Backend is offline — return null; UI must show offline state
+    return null;
   }
 }

@@ -1,9 +1,18 @@
+/**
+ * Frontend AI Service
+ *
+ * All API calls throw real errors on failure — no silent mock fallbacks.
+ * When the backend is offline or returns an error, the UI must show
+ * an explicit error state, not silently substitute fake data.
+ *
+ * Per spec: "DO NOT silently fall back to fake AI or fake simulations in production."
+ */
 import { apiFetch } from './api';
 
 export interface PlanStep {
   id: string;
   stepIndex: number;
-  agentRole: 'planner' | 'architect' | 'balancer' | 'auditor' | 'psychologist' | 'documenter';
+  agentRole: string;
   description: string;
   status: 'pending' | 'executing' | 'completed' | 'failed';
   confidence: number;
@@ -61,102 +70,94 @@ export interface StructuredAIResponse {
   proposal?: AIProposal;
 }
 
+export interface AIStatusResponse {
+  isDemo: boolean;
+  model: string;
+  message: string;
+}
+
+export interface AIChatResult {
+  plan: AgentPlan;
+  structuredResponse: StructuredAIResponse;
+  aiContent: string;
+  isDemo: boolean;
+}
+
+/**
+ * Check current AI mode (demo vs live) from the backend.
+ * Used to show the demo banner in the UI.
+ */
+export async function fetchAIStatus(): Promise<AIStatusResponse> {
+  return apiFetch<AIStatusResponse>('/api/ai/status');
+}
+
+/**
+ * Execute an AI chat request through the full orchestration pipeline.
+ *
+ * Throws on failure — callers must handle the error and show an appropriate
+ * error state. Never falls back to fake data.
+ */
 export async function executeAIChat(
   prompt: string,
-  projectId: string = 'default-project',
+  projectId: string,
   activeWorkspace: string = 'command-center'
-): Promise<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }> {
-  try {
-    return await apiFetch<{ plan: AgentPlan; structuredResponse: StructuredAIResponse }>('/ai/chat', {
-      method: 'POST',
-      body: JSON.stringify({ prompt, projectId, activeWorkspace }),
-    });
-  } catch {
-    // Fallback simulation if backend server is offline
-    const mockPlanId = `plan-${Date.now()}`;
-    const affected = [activeWorkspace || 'Economy', 'Progression', 'Simulation'];
-
-    const steps: PlanStep[] = [
-      { id: `${mockPlanId}-1`, stepIndex: 1, agentRole: 'planner', description: 'Decompose task & build system dependency context', status: 'completed', confidence: 95, durationMs: 120, affectedSystems: [activeWorkspace] },
-      { id: `${mockPlanId}-2`, stepIndex: 2, agentRole: 'architect', description: 'Analyze structural dependencies & node relationships', status: 'completed', confidence: 92, durationMs: 240, affectedSystems: [activeWorkspace] },
-      { id: `${mockPlanId}-3`, stepIndex: 3, agentRole: 'balancer', description: 'Calculate currency sinks, drop rates, and inflation risk', status: 'completed', confidence: 90, durationMs: 310, affectedSystems: ['Economy', 'Progression'] },
-      { id: `${mockPlanId}-4`, stepIndex: 4, agentRole: 'auditor', description: 'Audit safety impact and validate proposal changes', status: 'completed', confidence: 96, durationMs: 180, affectedSystems: affected },
-      { id: `${mockPlanId}-5`, stepIndex: 5, agentRole: 'documenter', description: 'Generate structured proposal diff and patch notes', status: 'completed', confidence: 94, durationMs: 150, affectedSystems: [activeWorkspace] },
-    ];
-
-    const proposal: AIProposal = {
-      id: `prop-${Date.now()}`,
-      projectId,
-      agentRole: 'balancer',
-      summary: `Adjust ${activeWorkspace} parameters & fix inflation risk`,
-      affectedSystems: affected,
-      diff: {
-        module: activeWorkspace,
-        before: { softCurrencyFaucet: 100, softCurrencySink: 85, dropRate: 0.015 },
-        after: { softCurrencyFaucet: 90, softCurrencySink: 95, dropRate: 0.02 },
-      },
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    const plan: AgentPlan = {
-      id: mockPlanId,
-      projectId,
-      prompt,
-      plannerSummary: `Formulated 5-step multi-agent plan for ${activeWorkspace} balance optimization.`,
-      steps,
-      status: 'requires_approval',
-      confidence: 93,
-      reasoning: 'Verified drop rate and gold sink capacity against 10,000 Monte Carlo simulation runs.',
-      affectedSystems: affected,
-      proposal,
-      requiresApproval: true,
-      warnings: [`Modifications to ${activeWorkspace} trigger downstream cascade in Progression & Simulation.`],
-      createdAt: new Date().toISOString(),
-    };
-
-    return {
-      plan,
-      structuredResponse: {
-        summary: plan.plannerSummary,
-        confidence: plan.confidence,
-        reasoning: plan.reasoning,
-        affectedSystems: plan.affectedSystems,
-        recommendations: steps.map((s) => ({ title: `${s.agentRole.toUpperCase()}: ${s.description}`, description: `Validated with ${s.confidence}% confidence`, actionable: true })),
-        toolCalls: [],
-        requiresApproval: true,
-        warnings: plan.warnings || [],
-        proposal,
-      },
-    };
-  }
+): Promise<AIChatResult> {
+  // Real API call only — no mock fallback
+  return apiFetch<AIChatResult>('/api/ai/chat', {
+    method: 'POST',
+    body: { prompt, projectId, activeWorkspace },
+  });
 }
 
-export async function applyProposal(proposalId: string, projectId: string = 'default-project'): Promise<{ success: boolean; versionNumber: number }> {
-  try {
-    return await apiFetch<{ success: boolean; versionNumber: number }>('/projects/apply', {
+/**
+ * Apply an approved AI proposal to the project.
+ *
+ * Throws on failure — the caller must handle errors and NOT silently
+ * report success when nothing was applied.
+ */
+export async function applyProposal(
+  proposalId: string,
+  projectId: string,
+  environment: 'sandbox' | 'staging' | 'production' = 'sandbox'
+): Promise<{ success: boolean; versionNumber: number; environment: string }> {
+  return apiFetch<{ success: boolean; versionNumber: number; environment: string }>(
+    '/api/projects/apply',
+    {
       method: 'POST',
-      body: JSON.stringify({ proposalId, projectId }),
-    });
-  } catch {
-    return { success: true, versionNumber: Date.now() % 100 };
-  }
+      body: { proposalId, projectId, environment },
+    }
+  );
 }
 
-export async function rollbackVersion(versionNumber: number, projectId: string = 'default-project'): Promise<{ success: boolean; currentVersion: number }> {
-  try {
-    return await apiFetch<{ success: boolean; currentVersion: number }>('/projects/rollback', {
+/**
+ * Rollback a project to a previous version.
+ *
+ * Throws on failure — never fake-reports success.
+ */
+export async function rollbackVersion(
+  versionNumber: number,
+  projectId: string
+): Promise<{ success: boolean; currentVersion: number }> {
+  return apiFetch<{ success: boolean; currentVersion: number }>(
+    '/api/projects/rollback',
+    {
       method: 'POST',
-      body: JSON.stringify({ versionNumber, projectId }),
-    });
-  } catch {
-    return { success: true, currentVersion: versionNumber + 1 };
-  }
+      body: { versionNumber, projectId },
+    }
+  );
 }
 
-export async function fetchProjectHistory(projectId: string = 'default-project'): Promise<{ versions: any[]; proposals: any[] }> {
+/**
+ * Fetch version history and proposals for a project.
+ * Returns empty arrays on failure (safe read-only operation).
+ */
+export async function fetchProjectHistory(
+  projectId: string
+): Promise<{ versions: any[]; proposals: any[] }> {
   try {
-    return await apiFetch<{ versions: any[]; proposals: any[] }>(`/projects/history?projectId=${projectId}`);
+    return await apiFetch<{ versions: any[]; proposals: any[] }>(
+      `/api/projects/history?projectId=${encodeURIComponent(projectId)}`
+    );
   } catch {
     return { versions: [], proposals: [] };
   }

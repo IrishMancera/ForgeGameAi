@@ -1,5 +1,5 @@
 {
-  "name": "figma-make-app",
+  "name": "game-forge-ai",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -9,6 +9,8 @@
     "dev:backend": "npm --prefix server run dev",
     "dev:all": "concurrently -n \"frontend,backend\" -c \"cyan,magenta\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "vite build",
+    "build:server": "npm --prefix server run build",
+    "build:all": "npm run build:server && npm run build",
     "preview": "vite preview",
     "format": "oxfmt"
   },

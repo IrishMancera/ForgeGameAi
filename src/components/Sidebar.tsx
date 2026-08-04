@@ -47,9 +47,10 @@ interface SidebarProps {
   currentPage: AppPage;
   onNavigate: (page: AppPage) => void;
   snapshot?: BackendSnapshot | null;
+  user?: UserProfile | null;
 }
 
-export default function Sidebar({ currentPage, onNavigate, snapshot }: SidebarProps) {
+export default function Sidebar({ currentPage, onNavigate, snapshot, user }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -59,13 +60,13 @@ export default function Sidebar({ currentPage, onNavigate, snapshot }: SidebarPr
     >
       <div className={`flex items-center gap-3 px-4 py-5 border-b border-[#DED9EA]/70 shrink-0 ${collapsed ? "justify-center px-0" : ""}`}>
         <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C3BFF] via-[#8B5CFF] to-[#19C6D1] shadow-[0_10px_24px_rgba(108,59,255,0.28)]">
-          <span style={{ fontFamily: "Orbitron, sans-serif" }} className="text-sm font-black leading-none text-white">G</span>
+          <img src="/favicon.png" className="h-5 w-5 object-contain" alt="G" />
           <span className="absolute right-1 top-1 h-2 w-2 animate-pulse rounded-full bg-[#FFC928]" />
         </div>
         {!collapsed && (
           <div>
             <div style={{ fontFamily: "Orbitron, sans-serif" }} className="text-[10px] font-black uppercase tracking-[0.24em] text-[#17152B] leading-tight">
-              GameForge
+              GameForgeAI
             </div>
             <div className="text-[9px] font-semibold uppercase tracking-[0.3em] text-[#6C6880]">Systems AI</div>
           </div>
@@ -133,17 +134,34 @@ export default function Sidebar({ currentPage, onNavigate, snapshot }: SidebarPr
           </button>
         ))}
 
-        <div className={`flex items-center gap-3 rounded-2xl border border-[#DED9EA]/70 bg-gradient-to-br from-white to-[#F4F1FA] ${collapsed ? "mx-2 justify-center px-2 py-3" : "mx-3 my-2 px-3 py-3"}`}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6C3BFF] to-[#19C6D1] text-[10px] font-black text-white">
-            JK
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-xs font-semibold text-[#17152B]">Jordan K.</div>
-              <div className="text-[10px] text-[#6C6880]">Lead Designer</div>
+        {(() => {
+          const getInitials = (first?: string, last?: string, mail?: string) => {
+            if (first) {
+              return `${first[0]}${last ? last[0] : ''}`.toUpperCase();
+            }
+            if (mail) {
+              return mail.slice(0, 2).toUpperCase();
+            }
+            return 'E';
+          };
+          const displayName = user ? (user.firstName ? `${user.firstName} ${user.lastName ?? ''}`.trim() : user.email) : 'Ellie L.';
+          const initials = user ? getInitials(user.firstName, user.lastName, user.email) : 'EL';
+          const role = user ? (user.role === 'admin' ? 'Admin' : 'Lead Designer') : 'Lead Designer';
+
+          return (
+            <div className={`flex items-center gap-3 rounded-2xl border border-[#DED9EA]/70 bg-gradient-to-br from-white to-[#F4F1FA] ${collapsed ? "mx-2 justify-center px-2 py-3" : "mx-3 my-2 px-3 py-3"}`}>
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#6C3BFF] to-[#19C6D1] text-[10px] font-black text-white">
+                {initials}
+              </div>
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-xs font-semibold text-[#17152B]">{displayName}</div>
+                  <div className="text-[10px] text-[#6C6880]">{role}</div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
       </div>
 
       {/* Collapse toggle */}

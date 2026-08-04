@@ -851,8 +851,8 @@ export default function Header({
 
       {/* ─── GLOBAL COMMAND PALETTE SEARCH MODAL ─────────────────────────────── */}
       {showSearchModal && (
-        <div className="fixed inset-0 z-[55] flex items-start justify-center bg-black/40" style={{ top: '3.5rem' }}>
-          <div className="bg-white rounded-2xl border border-[#DED9EA] w-full max-w-xl shadow-2xl overflow-hidden space-y-0 mx-auto mt-8 z-[58] relative">
+        <div className="fixed inset-0 z-[80] flex items-start justify-center bg-black/40" style={{ top: '3.5rem' }}>
+          <div className="bg-white rounded-2xl border border-[#DED9EA] w-full max-w-xl shadow-2xl overflow-hidden space-y-0 mx-auto mt-8 z-[85] relative">
             {/* Search Input Bar */}
             <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#DED9EA] bg-[#F4F1FA]/50">
               <Search size={18} className="text-[#6C3BFF]" />
@@ -919,7 +919,7 @@ export default function Header({
 
       {/* ─── CREATE PROJECT MODAL ────────────────────────────────────────────── */}
       {showCreateProjectModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl border border-[#DED9EA] p-6 w-full max-w-md shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -996,7 +996,7 @@ export default function Header({
 
       {/* ─── CREATE VERSION SNAPSHOT MODAL ────────────────────────────────────── */}
       {showCreateVersionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/40 p-4">
           <div className="bg-white rounded-2xl border border-[#DED9EA] p-6 w-full max-w-md shadow-2xl space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">

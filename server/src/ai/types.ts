@@ -1,4 +1,27 @@
-export type AgentRole = 'planner' | 'architect' | 'balancer' | 'auditor' | 'psychologist' | 'documenter';
+export type AgentRole =
+  | 'planner'
+  | 'architect'
+  | 'balancer'
+  | 'auditor'
+  | 'psychologist'
+  | 'documenter'
+  | 'simulation'
+  | 'telemetry'
+  | 'qa'
+  | 'game-director';
+
+// Safety action levels — AI cannot exceed its assigned level autonomously
+export type SafetyLevel =
+  | 'observe'     // Read-only: explain findings
+  | 'recommend'   // Suggest change + impact analysis, no writes
+  | 'simulate'    // Run simulations against sandbox values
+  | 'draft'       // Generate diffs and configuration proposals
+  | 'sandbox'     // Apply to non-production environment
+  | 'staging'     // Requires designated approver
+  | 'production'; // Requires human approval + rollback snapshot
+
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'revising';
+
 
 export type PlanStatus = 'pending' | 'planning' | 'executing' | 'completed' | 'failed' | 'requires_approval';
 export type StepStatus = 'pending' | 'executing' | 'completed' | 'failed';

@@ -155,7 +155,7 @@ export default function App() {
     setAuthPage(null);
     setProjectsList([]);
     setActiveProjectId(undefined);
-    addToast('info', 'Signed out', 'You are now signed out of GameForge.');
+    addToast('info', 'Signed out', 'You are now signed out of GameForgeAI.');
   };
 
   const handleCreateProjectHeader = async (name: string, genre?: string, targetPlatform?: string) => {
@@ -243,10 +243,10 @@ export default function App() {
         />
 
         <div className="flex flex-1 overflow-hidden">
-          <Sidebar currentPage={currentPage} onNavigate={navigate} snapshot={backendSnapshot} />
+          <Sidebar currentPage={currentPage} onNavigate={navigate} snapshot={backendSnapshot} user={user} />
 
           <main className="flex-1 min-w-0 overflow-hidden">
-            <div className="h-full overflow-y-auto">
+            <div key={currentPage} className="h-full overflow-y-auto page-transition-fade">
               {renderPage()}
             </div>
           </main>

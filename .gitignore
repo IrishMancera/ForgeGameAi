@@ -1,5 +1,6 @@
 node_modules/
 dist/
+server/dist/
 build/
 .cache/
 .env*
@@ -11,3 +12,6 @@ logs/
 *.log
 .claude-replay.*
 .tmp-*
+server/gameforge.db
+server/gameforge.db-shm
+server/gameforge.db-wal

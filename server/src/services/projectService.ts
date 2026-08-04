@@ -50,8 +50,11 @@ export async function getProject(projectId: string, userId: string): Promise<Pro
   const db = getDatabase();
 
   const project = await db.get(
-    'SELECT * FROM projects WHERE id = ? AND userId = ?',
-    [projectId, userId]
+    `SELECT p.* FROM projects p
+     LEFT JOIN project_members pm ON p.id = pm.projectId
+     WHERE p.id = ? AND (p.userId = ? OR pm.userId = ?)
+     LIMIT 1`,
+    [projectId, userId, userId]
   );
 
   if (!project) return null;
@@ -74,9 +77,14 @@ export async function getProject(projectId: string, userId: string): Promise<Pro
 export async function getUserProjects(userId: string): Promise<Project[]> {
   const db = getDatabase();
 
+  // Include projects the user owns AND projects they are a member of
   const projects = await db.all(
-    'SELECT * FROM projects WHERE userId = ? ORDER BY updatedAt DESC',
-    [userId]
+    `SELECT DISTINCT p.*
+     FROM projects p
+     LEFT JOIN project_members pm ON p.id = pm.projectId
+     WHERE p.userId = ? OR pm.userId = ?
+     ORDER BY p.updatedAt DESC`,
+    [userId, userId]
   );
 
   return projects.map((p) => {

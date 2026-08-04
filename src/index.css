@@ -203,3 +203,56 @@ body {
   background: #6C3BFF;
   border-radius: 0 2px 2px 0;
 }
+
+/* Page Transitions */
+.page-transition-fade {
+  animation: pageFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Card hover scaling micro-interactions */
+.premium-card {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease;
+}
+
+.premium-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 30px 60px rgba(108, 59, 255, 0.12);
+  border-color: rgba(108, 59, 255, 0.3);
+}
+
+/* AI Highlight Pulsing Glow */
+.pulse-glow {
+  position: relative;
+}
+
+.pulse-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 2px solid #6C3BFF;
+  animation: pulse-ring-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse-ring-glow {
+  0%, 100% {
+    opacity: 0.8;
+    box-shadow: 0 0 12px rgba(108, 59, 255, 0.4);
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 4px rgba(108, 59, 255, 0.1);
+  }
+}

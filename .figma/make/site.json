@@ -1,4 +1,8 @@
 {
+  "title": "Game Forge Ai",
+  "icons": {
+    "icon": "/favicon.png"
+  },
   "description": "Simplifies task management by allowing users to create, organize, and track tasks efficiently for improved productivity and workflow.",
   "robots": {
     "index": false

@@ -1,7 +1,15 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth.js';
-import { createProject, getProject, getUserProjects, updateProject, updateProjectModule, deleteProject } from '../services/projectService.js';
+import { requireProjectRole, requireOwner, requireNonViewer } from '../middleware/rbac.js';
+import {
+  createProject,
+  getProject,
+  getUserProjects,
+  updateProject,
+  updateProjectModule,
+  deleteProject,
+} from '../services/projectService.js';
 
 const router = Router();
 
@@ -23,8 +31,10 @@ const updateSchema = z.object({
   openDecisions: z.number().int().min(0).optional(),
 });
 
+// All routes require authentication
 router.use(authMiddleware);
 
+// GET / — List all projects the user owns or is a member of
 router.get('/', async (req, res) => {
   try {
     const projects = await getUserProjects(req.user!.userId);
@@ -34,6 +44,7 @@ router.get('/', async (req, res) => {
   }
 });
 
+// POST / — Create a new project (any authenticated user)
 router.post('/', async (req, res) => {
   try {
     const data = createSchema.parse(req.body);
@@ -44,7 +55,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.get('/:projectId', async (req, res) => {
+// GET /:projectId — Read project (any member including viewer)
+router.get('/:projectId', requireProjectRole('viewer'), async (req, res) => {
   try {
     const project = await getProject(req.params.projectId, req.user!.userId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -54,7 +66,8 @@ router.get('/:projectId', async (req, res) => {
   }
 });
 
-router.get('/:projectId/modules/:moduleName', async (req, res) => {
+// GET /:projectId/modules/:moduleName — Read module (any member including viewer)
+router.get('/:projectId/modules/:moduleName', requireProjectRole('viewer'), async (req, res) => {
   try {
     const project = await getProject(req.params.projectId, req.user!.userId);
     if (!project) return res.status(404).json({ error: 'Project not found' });
@@ -67,21 +80,27 @@ router.get('/:projectId/modules/:moduleName', async (req, res) => {
   }
 });
 
-router.put('/:projectId/modules/:moduleName', async (req, res) => {
-  try {
-    const project = await updateProjectModule(
-      req.params.projectId,
-      req.user!.userId,
-      req.params.moduleName,
-      req.body
-    );
-    res.json({ project, module: req.params.moduleName, data: req.body });
-  } catch (error) {
-    res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
+// PUT /:projectId/modules/:moduleName — Write module (editor+ only — viewers blocked)
+router.put(
+  '/:projectId/modules/:moduleName',
+  requireNonViewer, // editor, admin, owner only
+  async (req, res) => {
+    try {
+      const project = await updateProjectModule(
+        req.params.projectId,
+        req.user!.userId,
+        req.params.moduleName,
+        req.body
+      );
+      res.json({ project, module: req.params.moduleName, data: req.body });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Invalid request' });
+    }
   }
-});
+);
 
-router.patch('/:projectId', async (req, res) => {
+// PATCH /:projectId — Update project metadata (editor+ only)
+router.patch('/:projectId', requireNonViewer, async (req, res) => {
   try {
     const data = updateSchema.parse(req.body);
     const project = await updateProject(req.params.projectId, req.user!.userId, data);
@@ -91,7 +110,8 @@ router.patch('/:projectId', async (req, res) => {
   }
 });
 
-router.delete('/:projectId', async (req, res) => {
+// DELETE /:projectId — Owner only
+router.delete('/:projectId', requireOwner, async (req, res) => {
   try {
     await deleteProject(req.params.projectId, req.user!.userId);
     res.status(204).send();
