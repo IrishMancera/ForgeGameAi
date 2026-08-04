@@ -406,6 +406,55 @@ export async function initializeDatabase(dbPath: string): Promise<DatabaseInterf
       FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
     );
 
+    -- Normalized RAG Knowledge Base Tables
+    CREATE TABLE IF NOT EXISTS knowledge_documents (
+      id TEXT PRIMARY KEY,
+      organizationId TEXT,
+      projectId TEXT NOT NULL,
+      title TEXT NOT NULL,
+      documentType TEXT NOT NULL,
+      status TEXT DEFAULT 'approved',
+      version TEXT DEFAULT '1.0',
+      ownerId TEXT,
+      gameVersion TEXT,
+      environment TEXT DEFAULT 'sandbox',
+      storageKey TEXT,
+      contentHash TEXT,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      approvedAt TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_chunks (
+      id TEXT PRIMARY KEY,
+      documentId TEXT NOT NULL,
+      organizationId TEXT,
+      projectId TEXT NOT NULL,
+      sectionPath TEXT,
+      chunkIndex INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      tokenCount INTEGER DEFAULT 0,
+      embedding JSONB,
+      metadata JSONB,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (documentId) REFERENCES knowledge_documents(id) ON DELETE CASCADE,
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS knowledge_retrievals (
+      id TEXT PRIMARY KEY,
+      aiRunId TEXT,
+      projectId TEXT NOT NULL,
+      query TEXT NOT NULL,
+      filters JSONB,
+      retrievedChunkIds JSONB,
+      scores JSONB,
+      rerankerVersion TEXT DEFAULT 'bge-m3-v1',
+      latencyMs INTEGER DEFAULT 0,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (projectId) REFERENCES projects(id) ON DELETE CASCADE
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_telemetry_events_projectId ON telemetry_events(projectId);
     CREATE INDEX IF NOT EXISTS idx_telemetry_events_playerId ON telemetry_events(playerId);
@@ -426,6 +475,10 @@ export async function initializeDatabase(dbPath: string): Promise<DatabaseInterf
     CREATE INDEX IF NOT EXISTS idx_version_history_projectId ON version_history(projectId);
     CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_userId ON password_reset_tokens(userId);
     CREATE INDEX IF NOT EXISTS idx_workspace_invitations_token ON workspace_invitations(token);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_documents_projectId ON knowledge_documents(projectId);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_documentId ON knowledge_chunks(documentId);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_chunks_projectId ON knowledge_chunks(projectId);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_retrievals_projectId ON knowledge_retrievals(projectId);
   `;
 
   if (isPostgres) {
