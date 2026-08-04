@@ -57,6 +57,27 @@ export class ToolExecutor {
         case 'getAnalytics':
         case 'getAuditResults': {
           const db = getDatabase();
+          const moduleNameMap: Record<string, string> = {
+            getEconomy: 'economy-lab',
+            getProgression: 'progression',
+            getAnalytics: 'analytics',
+            getAuditResults: 'audit',
+          };
+          const targetModule = moduleNameMap[name];
+          if (targetModule) {
+            const modRow = await db.get(
+              `SELECT data FROM module_states WHERE projectId = ? AND moduleName = ? LIMIT 1`,
+              [projectId, targetModule]
+            );
+            if (modRow && modRow.data) {
+              try {
+                output = JSON.parse(modRow.data);
+                break;
+              } catch {
+                // Ignore parse error and fall back
+              }
+            }
+          }
           const row = await db.get(`SELECT * FROM projects WHERE id = ? OR userId = ? LIMIT 1`, [projectId, projectId]);
           output = row || { status: 'mock_active', systemHealth: 88, economy: { faucet: 100, sink: 85 } };
           break;

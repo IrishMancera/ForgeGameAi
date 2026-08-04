@@ -19,6 +19,9 @@ export const config = {
   openai: {
     apiKey: process.env.OPENAI_API_KEY || '',
   },
+  gemini: {
+    apiKey: process.env.GEMINI_API_KEY || '',
+  },
   google: {
     clientId: process.env.GOOGLE_CLIENT_ID || '',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',

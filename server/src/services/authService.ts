@@ -115,3 +115,49 @@ export async function forgotPassword(email: string) {
 
   return response.json();
 }
+
+export async function googleUserAuth(
+  email: string,
+  displayName?: string,
+  photoURL?: string
+): Promise<AuthResponse> {
+  const db = getDatabase();
+  const safeEmail = email.toLowerCase();
+  let user = await db.get('SELECT * FROM users WHERE email = ?', [safeEmail]);
+
+  if (!user) {
+    const userId = uuid();
+    const nameParts = (displayName || '').trim().split(' ');
+    const firstName = nameParts[0] || 'User';
+    const lastName = nameParts.slice(1).join(' ') || null;
+
+    await db.run(
+      `INSERT INTO users (id, email, passwordHash, firstName, lastName, avatar, subscriptionPlan, role)
+       VALUES (?, ?, 'OAUTH_GOOGLE', ?, ?, ?, 'pro', 'owner')`,
+      [userId, safeEmail, firstName, lastName, photoURL || null]
+    );
+
+    user = await db.get('SELECT * FROM users WHERE id = ?', [userId]);
+  }
+
+  if (!user) throw new Error('Failed to process Google user authentication');
+
+  const token = generateToken(user.id, user.email);
+  const refresh = refreshToken(user.id, user.email);
+
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      avatar: user.avatar,
+      subscriptionPlan: user.subscriptionPlan,
+      role: user.role,
+      createdAt: user.createdAt,
+    },
+    token,
+    refreshToken: refresh,
+  };
+}
+

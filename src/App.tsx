@@ -47,7 +47,11 @@ export default function App() {
   const [currentPage, setCurrentPage] = useState<AppPage>(getInitialPage);
 
   // Fetch projects list when user is logged in
+  // Fetch projects list when user is logged in with a valid server token
   const fetchUserProjects = useCallback(async () => {
+    const token = getStoredToken();
+    if (!token || token.startsWith('local-')) return;
+
     try {
       const res = await getProjects();
       setProjectsList(res.projects);
@@ -55,12 +59,13 @@ export default function App() {
         setActiveProjectId(res.projects[0].id);
       }
     } catch {
-      // ignore fetch error
+      // ignore 401 / unauthenticated error gracefully
     }
   }, [activeProjectId]);
 
   useEffect(() => {
-    if (user || getStoredToken()) {
+    const token = getStoredToken();
+    if ((user || token) && token && !token.startsWith('local-')) {
       fetchUserProjects();
     }
   }, [user, snapshotVersion, fetchUserProjects]);

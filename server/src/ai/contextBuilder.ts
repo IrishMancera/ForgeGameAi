@@ -8,7 +8,8 @@ export class ContextBuilder {
   public async buildContext(
     projectId: string,
     activeWorkspace: string,
-    userPrompt: string
+    userPrompt: string,
+    moduleSnapshot?: unknown
   ): Promise<AIContext> {
     let snapshot: Record<string, unknown> | null = null;
     let version = 1;
@@ -25,6 +26,10 @@ export class ContextBuilder {
       }
     } catch {
       snapshot = { name: 'Haunted Hotel', genre: 'Gacha RPG', systemHealth: 85 };
+    }
+
+    if (moduleSnapshot && typeof moduleSnapshot === 'object') {
+      snapshot = { ...(snapshot || {}), liveModuleData: moduleSnapshot };
     }
 
     const conversationHistory = await memoryService.getRecentConversationHistory(projectId, 6);

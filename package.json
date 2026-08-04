@@ -15,11 +15,12 @@
     "format": "oxfmt"
   },
   "dependencies": {
+    "firebase": "^12.17.0",
     "lucide-react": "^1.25.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.10.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
