@@ -180,6 +180,10 @@ export async function fetchCurrentUser(): Promise<{ user: UserProfile }> {
 
 export async function loginWithGoogle(): Promise<AuthResponse> {
   try {
+    if (!auth || !googleProvider) {
+      throw new TypeError('Firebase Auth is not configured');
+    }
+
     const userCredential = await signInWithPopup(auth, googleProvider);
     const firebaseUser = userCredential.user;
     const idToken = await firebaseUser.getIdToken();
