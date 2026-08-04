@@ -39,7 +39,7 @@ interface TeamMember {
   isYou?: boolean;
 }
 
-type SettingsTab = "profile" | "api" | "team" | "billing" | "security" | "notifications";
+type SettingsTab = "project" | "profile" | "api" | "team" | "billing" | "security" | "notifications";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -423,7 +423,7 @@ const DEFAULT_TEAM: TeamMember[] = [
 ];
 
 export default function Settings({ onToast, projectId, user }: SettingsProps) {
-  const [tab, setTab] = useState<SettingsTab>("profile");
+  const [tab, setTab] = useState<SettingsTab>("project");
 
   const [settingsState, setSettingsState, saveNow, saving] = useModuleState(
     "settings",
@@ -636,6 +636,7 @@ export default function Settings({ onToast, projectId, user }: SettingsProps) {
   // ── Tab Definitions ───────────────────────────────────────────────────────
 
   const TABS: { id: SettingsTab; label: string; icon: React.ReactNode }[] = [
+    { id: "project",       label: "Project",       icon: <Globe size={13} /> },
     { id: "profile",       label: "Profile",       icon: <User size={13} /> },
     { id: "api",           label: "API Keys",       icon: <Key size={13} /> },
     { id: "team",          label: "Team",           icon: <Users size={13} /> },
@@ -686,6 +687,96 @@ export default function Settings({ onToast, projectId, user }: SettingsProps) {
           </button>
         ))}
       </div>
+
+      {/* ── Project Settings Tab ────────────────────────────────────────── */}
+      {tab === "project" && (
+        <div className="max-w-2xl space-y-4">
+          <div className="bg-white border border-[#DED9EA] p-6 rounded-[14px] shadow-sm space-y-4">
+            <SectionLabel>Active Project Properties</SectionLabel>
+
+            <FormField label="Project ID" hint="Permanent unique system identifier">
+              <input
+                type="text"
+                disabled
+                value={projectId || "prj-local-default"}
+                className="w-full text-xs font-mono px-3 py-2 bg-[#F4F1FA] border border-[#DED9EA] rounded-xl text-[#6C6880] cursor-not-allowed"
+              />
+            </FormField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Project Name">
+                <input
+                  type="text"
+                  value={profile.studioName || "Phantom Ops Tycoon"}
+                  onChange={(e) => handleProfileChange("studioName", e.target.value)}
+                  className="w-full text-xs px-3 py-2 bg-white border border-[#DED9EA] rounded-xl text-[#17152B] focus:border-[#6C3BFF] outline-none"
+                />
+              </FormField>
+              <FormField label="Primary Genre">
+                <select
+                  value={profile.role || "Hybrid-Casual Tycoon"}
+                  onChange={(e) => handleProfileChange("role", e.target.value)}
+                  className="w-full text-xs px-3 py-2 bg-white border border-[#DED9EA] rounded-xl text-[#17152B] focus:border-[#6C3BFF] outline-none"
+                >
+                  <option value="Hybrid-Casual Tycoon">Hybrid-Casual Tycoon</option>
+                  <option value="Action RPG">Action RPG</option>
+                  <option value="Match-3 Puzzle">Match-3 Puzzle</option>
+                  <option value="4X Strategy">4X Strategy</option>
+                  <option value="MMORPG">MMORPG</option>
+                  <option value="FPS Arena">FPS Arena</option>
+                  <option value="Idle Clicker">Idle Clicker</option>
+                </select>
+              </FormField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Target System Health (%)">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={85}
+                  className="w-full text-xs px-3 py-2 bg-white border border-[#DED9EA] rounded-xl text-[#17152B] focus:border-[#6C3BFF] outline-none"
+                />
+              </FormField>
+              <FormField label="Target Blueprint Completion (%)">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  defaultValue={50}
+                  className="w-full text-xs px-3 py-2 bg-white border border-[#DED9EA] rounded-xl text-[#17152B] focus:border-[#6C3BFF] outline-none"
+                />
+              </FormField>
+            </div>
+          </div>
+
+          <div className="bg-red-50 border border-red-200 p-6 rounded-[14px] space-y-3">
+            <div className="flex items-center gap-2 text-red-600 font-bold text-xs">
+              <AlertTriangle size={15} /> Danger Zone
+            </div>
+            <p className="text-xs text-red-700">
+              Deleting a project removes all associated economy sinks, faucets, version history snapshots, and telemetry analytics permanently.
+            </p>
+            <button
+              onClick={() => {
+                setConfirm({
+                  title: "Delete Project",
+                  message: "Are you sure you want to delete this project? This action cannot be undone.",
+                  danger: true,
+                  onConfirm: () => {
+                    setConfirm(null);
+                    onToast("error", "Action Prohibited", "Project deletion requires Owner permissions in production mode.");
+                  },
+                });
+              }}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-xl transition-colors"
+            >
+              Delete Project Workspace
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Profile Tab ─────────────────────────────────────────────────── */}
       {tab === "profile" && (

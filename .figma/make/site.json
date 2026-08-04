@@ -1,11 +1,11 @@
 {
-  "title": "Game Forge Ai",
+  "title": "GameForge AI — Game Design, Economy & LiveOps OS",
   "icons": {
     "icon": "/favicon.png"
   },
-  "description": "Simplifies task management by allowing users to create, organize, and track tasks efficiently for improved productivity and workflow.",
+  "description": "Evidence-driven AI operating system for game design, economy balancing, progression scaling, telemetry analytics, and automated live-ops.",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,

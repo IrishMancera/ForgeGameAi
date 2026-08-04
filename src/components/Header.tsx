@@ -10,6 +10,7 @@ import type { BackendSnapshot } from "../services/backend";
 import type { UserProfile } from "../services/auth";
 import { downloadWorkbook } from "../services/export";
 import type { AppProject } from "../services/project";
+import { fetchProjectHistory } from "../services/aiService";
 import { SYSTEMS, RETENTION_DATA, ECONOMY_BALANCE, RISK_DATA, AUDIT_FINDINGS } from "../data/mockData";
 
 interface HeaderProps {
@@ -123,6 +124,24 @@ export default function Header({
   const [activeVersion, setActiveVersion] = useState<string>("v0.9.3");
   const [newVersionTag, setNewVersionTag] = useState("");
   const [newVersionSummary, setNewVersionSummary] = useState("");
+
+  useEffect(() => {
+    if (!activeProjectId) return;
+    fetchProjectHistory(activeProjectId).then((res) => {
+      if (res.versions && res.versions.length > 0) {
+        const mapped: VersionSnapshot[] = res.versions.map((v: any, index: number) => ({
+          id: v.id || `v-${v.versionNumber}`,
+          version: `v1.${v.versionNumber}.0`,
+          label: v.summary || `Version ${v.versionNumber}`,
+          date: v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'Recently',
+          author: v.createdBy ? 'Team Member' : 'System',
+          isCurrent: index === 0,
+        }));
+        setVersions(mapped);
+        if (mapped[0]) setActiveVersion(mapped[0].version);
+      }
+    });
+  }, [activeProjectId]);
 
   // Notifications State
   const [notifications, setNotifications] = useState<NotificationItem[]>([
