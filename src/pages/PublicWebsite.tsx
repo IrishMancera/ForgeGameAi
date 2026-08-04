@@ -636,24 +636,69 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
       </main>
 
       {/* Footer (Rendered at bottom of EVERY page!) */}
-      <footer className="border-t border-[#E4E0EC] bg-white px-6 py-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActivePage("home")}>
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#09090B] to-[#FF3B4F] flex items-center justify-center overflow-hidden">
-              <img src="/favicon.png" className="w-5 h-5 object-contain" alt="G" />
+      <footer className="border-t border-[#E4E0EC] bg-white px-6 py-14">
+        <div className="max-w-7xl mx-auto space-y-10">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            {/* Column 1: Studio & Brand */}
+            <div className="space-y-4 md:col-span-1">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActivePage("home")}>
+                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#09090B] via-zinc-900 to-[#FF3B4F] flex items-center justify-center overflow-hidden shadow-md">
+                  <img src="/favicon.png" className="w-5 h-5 object-contain" alt="G" />
+                </div>
+                <div>
+                  <span className="text-sm font-black tracking-widest text-[#09090B] font-mono block leading-none">GAMEFORGE<span className="text-[#FF3B4F]">.AI</span></span>
+                  <span className="text-[9px] font-bold text-[#00E676] uppercase font-mono mt-0.5 block">Tool by Outrank Strategy</span>
+                </div>
+              </div>
+              <p className="text-xs text-[#09090B]/70 leading-relaxed font-sans">
+                GameForge AI is the internal design intelligence tool engineered for <strong className="text-[#09090B] font-semibold">Outrank Strategy</strong>, developers of the hit mobile game <strong className="text-[#FF3B4F]">Dice Masters</strong>.
+              </p>
             </div>
-            <span className="text-xs font-black tracking-widest text-[#09090B] font-mono">GAMEFORGE.AI OPERATING OS</span>
+
+            {/* Column 2: Flagship Mobile Games & Studio */}
+            <div className="space-y-3 font-sans">
+              <h4 className="text-xs font-black font-mono text-[#09090B] uppercase tracking-wider">OUTRANK STRATEGY STUDIO</h4>
+              <ul className="space-y-2 text-xs text-[#09090B]/70">
+                <li className="flex items-center gap-2">
+                  <Coins size={13} className="text-[#FFD700]" />
+                  <span className="font-bold text-[#09090B]">Dice Masters</span> (Mobile Game)
+                </li>
+                <li>Outrank Strategy Game Lab</li>
+                <li>Mobile Economy Systems</li>
+                <li>LiveOps & Churn Prevention</li>
+              </ul>
+            </div>
+
+            {/* Column 3: Lead Developer & System Architect */}
+            <div className="space-y-3 font-sans">
+              <h4 className="text-xs font-black font-mono text-[#09090B] uppercase tracking-wider">DEVELOPER & ARCHITECT</h4>
+              <div className="space-y-2 text-xs text-[#09090B]/70">
+                <p className="font-bold text-[#09090B] flex items-center gap-1.5">
+                  <Award size={14} className="text-amber-500" /> Irish Mancera
+                </p>
+                <p className="text-[11px] leading-relaxed text-[#09090B]/70">
+                  Lead Mobile Game System Developer & Principal AI Architect behind Outrank Strategy and GameForge AI.
+                </p>
+              </div>
+            </div>
+
+            {/* Column 4: Quick Navigation Links */}
+            <div className="space-y-3 font-sans">
+              <h4 className="text-xs font-black font-mono text-[#09090B] uppercase tracking-wider">NAVIGATION</h4>
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono text-[#09090B]/70">
+                {NAV_ITEMS.map((item) => (
+                  <button key={item.key} onClick={() => setActivePage(item.key)} className="text-left hover:text-[#FF3B4F] transition-colors">
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 text-xs font-mono text-[#09090B]/60">
-            {NAV_ITEMS.map((item) => (
-              <button key={item.key} onClick={() => setActivePage(item.key)} className="hover:text-[#FF3B4F] transition-colors">
-                {item.label}
-              </button>
-            ))}
+          <div className="pt-8 border-t border-[#E4E0EC] flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-mono text-[#09090B]/60">
+            <p>© 2026 Outrank Strategy & Irish Mancera. All rights reserved.</p>
+            <p className="text-[11px] text-[#09090B]/50">GameForge.AI — Powered by Dice Masters Engineering</p>
           </div>
-
-          <p className="text-xs text-[#09090B]/50 font-mono">© 2026 GameForge.AI. All rights reserved.</p>
         </div>
       </footer>
     </div>
