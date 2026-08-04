@@ -669,16 +669,26 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
               </ul>
             </div>
 
-            {/* Column 3: Lead Developer & System Architect */}
+            {/* Column 3: Studio Leadership & Developer */}
             <div className="space-y-3 font-sans">
-              <h4 className="text-xs font-black font-mono text-[#09090B] uppercase tracking-wider">DEVELOPER & ARCHITECT</h4>
-              <div className="space-y-2 text-xs text-[#09090B]/70">
-                <p className="font-bold text-[#09090B] flex items-center gap-1.5">
-                  <Award size={14} className="text-amber-500" /> Irish Mancera
-                </p>
-                <p className="text-[11px] leading-relaxed text-[#09090B]/70">
-                  Lead Mobile Game System Developer & Principal AI Architect behind Outrank Strategy and GameForge AI.
-                </p>
+              <h4 className="text-xs font-black font-mono text-[#09090B] uppercase tracking-wider">STUDIO LEADERSHIP & DEVELOPER</h4>
+              <div className="space-y-3 text-xs text-[#09090B]/70">
+                <div>
+                  <p className="font-bold text-[#09090B] flex items-center gap-1.5">
+                    <Shield size={14} className="text-[#FF3B4F]" /> Troy Teeples
+                  </p>
+                  <p className="text-[11px] leading-relaxed text-[#09090B]/70">
+                    CEO of Outrank Strategy
+                  </p>
+                </div>
+                <div>
+                  <p className="font-bold text-[#09090B] flex items-center gap-1.5">
+                    <Award size={14} className="text-amber-500" /> Irish Mancera
+                  </p>
+                  <p className="text-[11px] leading-relaxed text-[#09090B]/70">
+                    Lead Mobile Game System Developer & Principal AI Architect behind Outrank Strategy and GameForge AI.
+                  </p>
+                </div>
               </div>
             </div>
 
