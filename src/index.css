@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Rajdhani:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@300;400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Playfair+Display:ital,wght@1,600;1,800&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -14,11 +14,12 @@
   --color-brand-border: #DED9EA;
   --color-brand-success: #19A974;
 
+  --font-syne: 'Syne', sans-serif;
+  --font-serif: 'Instrument Serif', 'Playfair Display', serif;
+  --font-sans: 'Plus Jakarta Sans', sans-serif;
   --font-orbitron: 'Orbitron', sans-serif;
   --font-space: 'Space Grotesk', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
-  --font-rajdhani: 'Rajdhani', sans-serif;
-  --font-cormorant: 'Cormorant Garamond', serif;
 }
 
 * {

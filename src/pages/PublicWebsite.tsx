@@ -12,7 +12,7 @@ const NAV_LINKS = ["Product", "Solutions", "Templates", "Workbook Gallery", "Met
 
 const GENRE_TEMPLATES = [
   { name: "Idle Clicker", icon: "⚡", systems: 12, tabs: 28, time: "45 min", badge: "POPULAR" },
-  { name: "Tycoon", icon: "🏙", systems: 18, tabs: 32, time: "60 min", badge: "FEATURED" },
+  { name: "Tycoon", icon: "🏙", systems: 18, tabs: 32, time: "60 min", badge: "GOLD TIER" },
   { name: "Merge Mania", icon: "🧩", systems: 10, tabs: 24, time: "35 min", badge: "FAST" },
   { name: "Match Puzzle", icon: "🔮", systems: 8, tabs: 22, time: "30 min", badge: "HOT" },
   { name: "RPG Quest", icon: "⚔️", systems: 24, tabs: 34, time: "90 min", badge: "HARDCORE" },
@@ -22,11 +22,11 @@ const GENRE_TEMPLATES = [
 ];
 
 const AGENTS = [
-  { name: "Architect AI", icon: "🏗", roleClass: "System Builder", skill: "Dependency Node Mapping", pwr: "98%", desc: "Transforms raw game concepts into structured connection graphs and maps cross-system dependencies.", color: "border-red-200 bg-red-50/40 hover:border-red-500" },
-  { name: "Balancer AI", icon: "⚖️", roleClass: "Economy Sage", skill: "Monte Carlo Curve Calibration", pwr: "95%", desc: "Simulates currencies, faucets, sinks, and reward tables against mathematical churn indicators.", color: "border-emerald-200 bg-emerald-50/40 hover:border-[#00E676]" },
-  { name: "Auditor AI", icon: "🔍", roleClass: "Risk Ranger", skill: "Anti-inflation Integrity Scans", pwr: "97%", desc: "Automatically flags broken progression gaps, reward loops, and paywall spikes before deployment.", color: "border-amber-200 bg-amber-50/40 hover:border-amber-500" },
-  { name: "Psychologist AI", icon: "🧠", roleClass: "Mind Mage", skill: "Ethical Engagement Audits", pwr: "94%", desc: "Evaluates Bartle motivation scores, excitement curves, and pay-to-win mechanics for long-term health.", color: "border-[#FF3B4F]/30 bg-[#FF3B4F]/5 hover:border-[#FF3B4F]" },
-  { name: "Documenter AI", icon: "📄", roleClass: "Workbook Scribe", skill: "Automated Workbook Compiler", pwr: "99%", desc: "Compiles balanced design data into developer-ready XLSX workbooks with formulas and layout tables.", color: "border-emerald-300 bg-emerald-50/60 hover:border-[#00E676]" },
+  { name: "Architect AI", icon: "🏗", roleClass: "System Builder", skill: "Dependency Node Mapping", pwr: "98%", desc: "Transforms raw game concepts into structured connection graphs and maps cross-system dependencies.", color: "border-red-200 bg-red-50/40 hover:border-red-500 shadow-xs" },
+  { name: "Balancer AI", icon: "⚖️", roleClass: "Economy Sage", skill: "Monte Carlo Curve Calibration", pwr: "95%", desc: "Simulates currencies, faucets, sinks, and reward tables against mathematical churn indicators.", color: "border-emerald-200 bg-emerald-50/40 hover:border-[#00E676] shadow-xs" },
+  { name: "Auditor AI", icon: "🔍", roleClass: "Risk Ranger", skill: "Anti-inflation Integrity Scans", pwr: "97%", desc: "Automatically flags broken progression gaps, reward loops, and paywall spikes before deployment.", color: "border-amber-200 bg-amber-50/40 hover:border-amber-500 shadow-xs" },
+  { name: "Psychologist AI", icon: "🧠", roleClass: "Mind Mage", skill: "Ethical Engagement Audits", pwr: "94%", desc: "Evaluates Bartle motivation scores, excitement curves, and pay-to-win mechanics for long-term health.", color: "border-[#FF3B4F]/30 bg-[#FF3B4F]/5 hover:border-[#FF3B4F] shadow-xs" },
+  { name: "Documenter AI", icon: "📄", roleClass: "Workbook Scribe", skill: "Automated Workbook Compiler", pwr: "99%", desc: "Compiles balanced design data into developer-ready XLSX workbooks with formulas and layout tables.", color: "border-emerald-300 bg-emerald-50/60 hover:border-[#00E676] shadow-xs" },
 ];
 
 const PRICING = [
@@ -43,7 +43,7 @@ const PRICING = [
     price: 99,
     period: "billed annually ($125 monthly)",
     desc: "For creative teams scaling multiple connected projects.",
-    color: "border-[#FFD700] bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 shadow-[0_10px_40px_rgba(245,158,11,0.25)] ring-2 ring-[#FFD700]/50",
+    color: "border-[#FFD700] bg-gradient-to-b from-amber-50/80 via-white to-amber-50/30 shadow-[0_10px_40px_rgba(245,158,11,0.25)] ring-2 ring-[#FFD700]/60",
     highlight: true,
     features: ["10 Active Project Workspaces", "Unlimited Connected Systems", "Team Collaboration (5 Seats Included)", "Unlimited Monte Carlo Simulations", "All Workbook & GDD Export Formats", "AI Copilot Priority Quota", "Dedicated Priority Support"],
   },
@@ -113,20 +113,20 @@ function GachaSimulator() {
       return {
         title: "🚨 Economy Hyper-Inflation Risk",
         desc: "Legendary drop rate is too high (>5%). This will flood your server economy, crash item trade value, and lead to rapid progression stagnation.",
-        color: "bg-red-500/10 border-red-500/30 text-red-700",
+        color: "bg-red-500/10 border-red-500/30 text-red-700 font-sans",
       };
     }
     if (legendaryRate < 0.5) {
       return {
         title: "⚡ Player Retention Churn Warning",
         desc: "Legendary drop rate is below 0.5%. Players will encounter prolonged reward dry spells, causing high frustration metrics and early churn.",
-        color: "bg-amber-500/10 border-amber-500/30 text-amber-700",
+        color: "bg-amber-500/10 border-amber-500/30 text-amber-700 font-sans",
       };
     }
     return {
       title: "✨ Gold-Standard Balanced Pacing",
       desc: "Optimal balance achieved! Scarcity is preserved while providing satisfying micro-rewards for D7 retention targets.",
-      color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700",
+      color: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 font-sans",
     };
   };
 
@@ -141,14 +141,14 @@ function GachaSimulator() {
       <div className="flex items-center justify-between border-b border-[#E4E0EC] pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-700 border border-amber-500/30 uppercase tracking-widest font-mono flex items-center gap-1">
-              <Coins size={12} className="text-[#FFD700]" /> GOLD MONTE CARLO ENGINE
+            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-800 border border-amber-500/30 uppercase tracking-widest font-mono flex items-center gap-1.5 shadow-2xs">
+              <Coins size={13} className="text-[#FFD700]" /> GOLD MONTE CARLO ENGINE
             </span>
-            <span className="text-[10px] font-mono font-bold text-[#00E676] bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">LIVE SIMULATOR</span>
+            <span className="text-[10px] font-mono font-bold text-[#00E676] bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">LIVE ENGINE</span>
           </div>
-          <h3 className="text-xl font-black text-[#09090B] mt-1 font-mono tracking-tight">STRESS-TEST LOOT & ECONOMY DROP RATES</h3>
+          <h3 className="text-2xl font-extrabold text-[#09090B] mt-2 font-space tracking-tight">STRESS-TEST LOOT & ECONOMY DROP RATES</h3>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-[#09090B]/60 bg-[#FAFAFC] px-3 py-1.5 rounded-xl border border-[#E4E0EC]">
+        <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-[#09090B]/60 bg-[#FAFAFC] px-3.5 py-2 rounded-2xl border border-[#E4E0EC] shadow-2xs">
           <Activity size={14} className="text-[#00E676] animate-pulse" /> 10,000 RUNS / SEC
         </div>
       </div>
@@ -158,7 +158,7 @@ function GachaSimulator() {
           <div>
             <div className="flex justify-between text-xs font-bold text-[#09090B] mb-2 font-mono">
               <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#FFD700] shadow-[0_0_10px_#FFD700] block" /> LEGENDARY GOLD DROP RATE</span>
-              <span className="text-amber-600 font-mono text-sm">{legendaryRate}%</span>
+              <span className="text-amber-600 font-mono text-sm font-black">{legendaryRate}%</span>
             </div>
             <input
               type="range" min="0.1" max="15" step="0.1"
@@ -175,7 +175,7 @@ function GachaSimulator() {
           <div>
             <div className="flex justify-between text-xs font-bold text-[#09090B] mb-2 font-mono">
               <span className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#00E676] shadow-[0_0_10px_#00E676] block" /> RARE NEON DROP RATE</span>
-              <span className="text-emerald-600 font-mono text-sm">{rareRate}%</span>
+              <span className="text-emerald-600 font-mono text-sm font-black">{rareRate}%</span>
             </div>
             <input
               type="range" min="1" max="50" step="1"
@@ -193,7 +193,7 @@ function GachaSimulator() {
         <button
           onClick={runSimulation}
           disabled={simulating}
-          className="w-full bg-[#09090B] hover:bg-black text-white text-xs font-bold font-mono py-4 rounded-2xl transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2.5 shadow-[0_10px_30px_rgba(9,9,11,0.25)] relative overflow-hidden group/btn"
+          className="w-full bg-[#09090B] hover:bg-black text-white text-xs font-black font-mono py-4 rounded-2xl transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2.5 shadow-[0_10px_30px_rgba(9,9,11,0.25)] relative overflow-hidden group/btn"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-[#FF3B4F]/20 via-[#FFD700]/20 to-[#00E676]/20 opacity-0 group-hover/btn:opacity-100 transition-opacity" />
           <Coins size={16} className="text-[#FFD700] animate-bounce" />
@@ -203,24 +203,24 @@ function GachaSimulator() {
         {rolls && !simulating && (
           <div className="space-y-4 pt-4 border-t border-[#E4E0EC] animate-fadeIn">
             <div className="grid grid-cols-3 gap-4 text-center">
-              <div className="bg-amber-500/10 border border-amber-400/40 rounded-2xl p-4 shadow-sm">
+              <div className="bg-amber-500/10 border border-amber-400/40 rounded-2xl p-4 shadow-2xs">
                 <span className="text-3xl font-black font-mono text-amber-600">{rolls.legendary}</span>
                 <div className="text-[10px] font-bold font-mono text-amber-800 mt-1 flex items-center justify-center gap-1">
                   <Coins size={11} className="text-[#FFD700]" /> LEGENDARIES
                 </div>
               </div>
-              <div className="bg-emerald-500/10 border border-emerald-400/40 rounded-2xl p-4 shadow-sm">
+              <div className="bg-emerald-500/10 border border-emerald-400/40 rounded-2xl p-4 shadow-2xs">
                 <span className="text-3xl font-black font-mono text-emerald-600">{rolls.rare}</span>
                 <div className="text-[10px] font-bold font-mono text-emerald-800 mt-1">RARES</div>
               </div>
-              <div className="bg-zinc-100 border border-zinc-300 rounded-2xl p-4 shadow-sm">
+              <div className="bg-zinc-100 border border-zinc-300 rounded-2xl p-4 shadow-2xs">
                 <span className="text-3xl font-black font-mono text-zinc-700">{rolls.common}</span>
                 <div className="text-[10px] font-bold font-mono text-zinc-500 mt-1">COMMONS</div>
               </div>
             </div>
 
             {audit && (
-              <div className={`p-4 rounded-2xl border flex gap-3 items-start ${audit.color} shadow-sm`}>
+              <div className={`p-4 rounded-2xl border flex gap-3 items-start ${audit.color} shadow-2xs`}>
                 <div className="text-xl shrink-0">🤖</div>
                 <div>
                   <h4 className="font-bold text-xs font-mono">{audit.title}</h4>
@@ -242,18 +242,15 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
 
   return (
     <div className="relative min-h-screen overflow-y-auto bg-[#FAFAFC] text-[#09090B] selection:bg-[#FFD700]/30 scroll-smooth font-sans">
-      {/* Abstract Animated Light Theme Background Art */}
+      {/* Abstract Animated Ambient Orbs */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        {/* Abstract Glowing Neon Green Mesh */}
-        <div className="absolute top-[-100px] left-[-100px] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#00E676]/15 via-[#00F5D4]/10 to-transparent blur-[140px] animate-pulse" style={{ animationDuration: '8s' }} />
-        {/* Abstract Crimson Red Ambient Orb */}
+        <div className="absolute top-[-100px] left-[-100px] w-[650px] h-[650px] rounded-full bg-gradient-to-br from-[#00E676]/15 via-[#00F5D4]/10 to-transparent blur-[140px] animate-pulse" style={{ animationDuration: '8s' }} />
         <div className="absolute top-[400px] right-[-150px] w-[650px] h-[650px] rounded-full bg-gradient-to-br from-[#FF3B4F]/12 via-rose-300/10 to-transparent blur-[160px]" />
-        {/* Abstract Metallic Gold Light Glow */}
         <div className="absolute bottom-[200px] left-[20%] w-[700px] h-[700px] rounded-full bg-gradient-to-br from-[#FFD700]/15 via-amber-200/10 to-transparent blur-[180px]" />
       </div>
 
-      {/* Navigation Header */}
-      <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-2xl border-b border-[#E4E0EC]/80 shadow-xs">
+      {/* Navigation Bar */}
+      <nav className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[#E4E0EC]/80 shadow-2xs">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActivePage("home")}>
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#09090B] via-zinc-900 to-[#FF3B4F] flex items-center justify-center overflow-hidden shadow-md group-hover:scale-105 transition-transform">
@@ -261,7 +258,7 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
             </div>
             <div>
               <span className="text-base font-black tracking-widest text-[#09090B] font-mono block leading-none">GAMEFORGE<span className="text-[#FF3B4F]">.AI</span></span>
-              <span className="text-[9px] font-bold tracking-wider text-[#00E676] uppercase font-mono mt-0.5 block">LiveOps Operating OS</span>
+              <span className="text-[9px] font-bold tracking-wider text-[#00E676] uppercase font-mono mt-0.5 block">Game Design & LiveOps OS</span>
             </div>
           </div>
 
@@ -275,7 +272,7 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                   else if (link === "Methodology") setActivePage("methodology");
                   else setActivePage("home");
                 }}
-                className="text-xs font-bold font-mono text-[#09090B]/70 hover:text-[#FF3B4F] transition-colors uppercase tracking-wider"
+                className="text-xs font-extrabold font-mono text-[#09090B]/70 hover:text-[#FF3B4F] transition-colors uppercase tracking-wider"
               >
                 {link}
               </button>
@@ -286,7 +283,7 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
             <button onClick={onEnterApp} className="text-xs font-bold font-mono text-[#09090B]/80 hover:text-[#09090B] transition-colors px-3 py-2">SIGN IN</button>
             <button
               onClick={onEnterApp}
-              className="flex items-center gap-2 bg-[#09090B] hover:bg-black text-white text-xs font-bold font-mono px-5 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_4px_20px_rgba(9,9,11,0.25)] border border-amber-400/30"
+              className="flex items-center gap-2 bg-[#09090B] hover:bg-black text-white text-xs font-black font-mono px-5 py-3 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_4px_20px_rgba(9,9,11,0.25)] border border-amber-400/30"
             >
               <Coins size={14} className="text-[#FFD700]" /> LAUNCH SYSTEM <ArrowRight size={14} />
             </button>
@@ -297,34 +294,36 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
       {/* Pages Router */}
       {activePage === "home" && (
         <div className="space-y-28 py-16">
-          {/* Hero Section */}
+          {/* Creative Typography Hero Section */}
           <section className="max-w-7xl mx-auto px-6 text-center space-y-8 relative">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-red-500/10 border border-[#E4E0EC] rounded-full px-5 py-2 text-xs font-mono text-[#09090B] font-bold shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-ping" />
-              <span className="text-[#FF3B4F]">RED</span> / <span className="text-[#00E676]">NEON GREEN</span> / <span className="text-amber-600">GOLD</span> BALANCING ENGINE ACTIVE
+            {/* User Requested: Removed Red/Neon Green/Gold banner and replaced with sleek badge */}
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 via-emerald-500/10 to-red-500/10 border border-[#E4E0EC] rounded-full px-5 py-2 text-xs font-mono text-[#09090B] font-extrabold shadow-2xs">
+              <Sparkles size={14} className="text-[#FFD700] animate-pulse" />
+              <span>NEXT-GEN EVIDENCE-DRIVEN AI ENGINE FOR GAME STUDIOS</span>
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-black text-[#09090B] leading-tight tracking-tight max-w-5xl mx-auto font-mono">
-              ENGINEER GAME ECONOMIES THAT <br />
-              <span className="bg-gradient-to-r from-[#FF3B4F] via-[#00E676] to-[#F59E0B] bg-clip-text text-transparent">
+            {/* Creative Typographic Contrast (Thick Display + Slanted Artistic Serif + Crimson/Gold/Neon Accents) */}
+            <h1 className="text-5xl md:text-7xl font-black text-[#09090B] leading-tight tracking-tight max-w-5xl mx-auto font-space">
+              ENGINEER GAME <span className="font-serif italic font-normal text-[#FF3B4F] tracking-normal">economies</span> THAT <br />
+              <span className="bg-gradient-to-r from-[#FF3B4F] via-[#00E676] to-[#F59E0B] bg-clip-text text-transparent font-black">
                 SURVIVE REAL PLAYER METAS.
               </span>
             </h1>
 
-            <p className="text-base md:text-xl text-[#09090B]/70 max-w-3xl mx-auto leading-relaxed font-sans font-medium">
-              Architect core game loops, simulate 10,000-player Monte Carlo journeys, prevent hyper-inflation, and export developer-ready formula spreadsheets with 10 specialist AI agents.
+            <p className="text-base md:text-xl text-[#09090B]/75 max-w-3xl mx-auto leading-relaxed font-sans font-medium">
+              Architect core game loops, simulate 10,000-player Monte Carlo journeys, prevent hyper-inflation, and export developer-ready formula spreadsheets with <span className="font-serif italic text-amber-700 font-normal">10 specialist AI agents</span>.
             </p>
 
             <div className="flex flex-wrap items-center justify-center gap-5 pt-4">
               <button
                 onClick={onEnterApp}
-                className="flex items-center gap-3 bg-[#09090B] hover:bg-black text-white font-bold font-mono px-8 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_10px_35px_rgba(9,9,11,0.25)] text-xs border border-[#FFD700]/40"
+                className="flex items-center gap-3 bg-[#09090B] hover:bg-black text-white font-black font-mono px-8 py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-[0_10px_35px_rgba(9,9,11,0.25)] text-xs border border-[#FFD700]/40"
               >
                 <Sparkles size={16} className="text-[#FFD700]" /> INITIALIZE WORKSPACE <ArrowRight size={16} />
               </button>
               <button
                 onClick={onEnterApp}
-                className="flex items-center gap-2 border border-[#E4E0EC] bg-white text-[#09090B] font-bold font-mono px-8 py-4 rounded-2xl hover:bg-zinc-50 transition-all text-xs shadow-sm hover:border-[#09090B]"
+                className="flex items-center gap-2 border border-[#E4E0EC] bg-white text-[#09090B] font-extrabold font-mono px-8 py-4 rounded-2xl hover:bg-zinc-50 transition-all text-xs shadow-2xs hover:border-[#09090B]"
               >
                 <Table2 size={16} className="text-[#00E676]" /> LOAD DEMO WORKBOOK
               </button>
@@ -334,9 +333,11 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           {/* Interactive Simulation Sandbox */}
           <section className="max-w-7xl mx-auto px-6 text-center space-y-6">
             <div className="space-y-2">
-              <span className="text-xs font-bold font-mono text-[#FF3B4F] uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full border border-red-100">STRESS-TEST ENGINE</span>
-              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-mono tracking-tight">Interactive Monte Carlo Calibration</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">Adjust drop rate sliders below to stress-test your economy against real churn diagnostics.</p>
+              <span className="text-xs font-bold font-mono text-[#FF3B4F] uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full border border-red-100">MONTE CARLO SIMULATOR</span>
+              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-space tracking-tight">
+                STRESS-TEST YOUR <span className="font-serif italic font-normal text-amber-600">balance</span> ON THE FLY
+              </h2>
+              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">Adjust drop rate sliders below to stress-test your economy against real churn diagnostics.</p>
             </div>
             <GachaSimulator />
           </section>
@@ -345,8 +346,10 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           <section className="max-w-7xl mx-auto px-6 space-y-12">
             <div className="text-center space-y-3">
               <span className="text-xs font-bold font-mono text-[#00E676] uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">10 AI AGENT SPECIALISTS</span>
-              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-mono tracking-tight">CHOOSE YOUR OPTIMIZATION PARTY</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">Deploy AI specialist agents to continuously audit game balance, progression walls, and motivation curves.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-space tracking-tight">
+                CHOOSE YOUR <span className="font-serif italic font-normal text-[#FF3B4F]">optimization</span> PARTY
+              </h2>
+              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">Deploy AI specialist agents to continuously audit game balance, progression walls, and motivation curves.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
@@ -358,9 +361,9 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                   <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-400/10 to-transparent rounded-full blur-xl pointer-events-none" />
                   <div>
                     <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">{a.icon}</div>
-                    <h3 className="font-extrabold text-lg text-[#09090B] font-mono">{a.name}</h3>
-                    <div className="text-[10px] font-bold text-[#00E676] uppercase font-mono tracking-wider mt-0.5">{a.roleClass}</div>
-                    <p className="text-xs text-[#09090B]/70 leading-relaxed mt-4">{a.desc}</p>
+                    <h3 className="font-black text-lg text-[#09090B] font-space">{a.name}</h3>
+                    <div className="text-[10px] font-extrabold text-[#00E676] uppercase font-mono tracking-wider mt-0.5">{a.roleClass}</div>
+                    <p className="text-xs text-[#09090B]/70 leading-relaxed mt-4 font-sans">{a.desc}</p>
                   </div>
                   <div className="pt-5 border-t border-[#E4E0EC] mt-6 space-y-2 font-mono text-[10px]">
                     <div className="flex justify-between">
@@ -381,22 +384,24 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           <section className="bg-gradient-to-b from-white via-[#FAFAFC] to-white border-y border-[#E4E0EC] py-24 px-6">
             <div className="max-w-7xl mx-auto space-y-14">
               <div className="text-center space-y-3">
-                <span className="text-xs font-bold font-mono text-amber-700 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200">AUTOMATED WORKFLOW</span>
-                <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-mono">6-STAGE GAME DESIGN PIPELINE</h2>
-                <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">From raw GDD text drafts to production-ready formula workbooks in minutes.</p>
+                <span className="text-xs font-bold font-mono text-amber-800 uppercase tracking-widest bg-amber-50 px-3 py-1 rounded-full border border-amber-200">AUTOMATED WORKFLOW</span>
+                <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-space">
+                  6-STAGE GAME DESIGN <span className="font-serif italic font-normal text-[#00E676]">pipeline</span>
+                </h2>
+                <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">From raw GDD text drafts to production-ready formula workbooks in minutes.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-6 gap-6 relative">
                 {WORKFLOW.map((w, i) => (
-                  <div key={w.step} className="relative flex flex-col justify-between bg-white border border-[#E4E0EC] rounded-3xl p-6 shadow-xs group hover:border-[#09090B] transition-all hover:shadow-xl">
+                  <div key={w.step} className="relative flex flex-col justify-between bg-white border border-[#E4E0EC] rounded-3xl p-6 shadow-2xs group hover:border-[#09090B] transition-all hover:shadow-xl">
                     <div>
                       <div className="flex justify-between items-center mb-3">
-                        <span className="text-[10px] font-mono font-bold text-[#FF3B4F] bg-red-50 px-2 py-0.5 rounded-full border border-red-100">{w.step}</span>
-                        <span className="text-[9px] font-mono text-[#09090B]/40 uppercase tracking-widest font-bold">STAGE</span>
+                        <span className="text-[10px] font-mono font-bold text-[#FF3B4F] bg-red-50 px-2.5 py-0.5 rounded-full border border-red-100">{w.step}</span>
+                        <span className="text-[9px] font-mono text-[#09090B]/40 uppercase tracking-widest font-extrabold">STAGE</span>
                       </div>
                       <h4 className="font-extrabold text-sm text-[#09090B] font-mono mb-1">{w.label}</h4>
                       <div className="text-[10px] text-[#00E676] font-bold mb-3">{w.action}</div>
-                      <p className="text-[11px] text-[#09090B]/70 leading-relaxed">{w.desc}</p>
+                      <p className="text-[11px] text-[#09090B]/70 leading-relaxed font-sans">{w.desc}</p>
                     </div>
                     {i < WORKFLOW.length - 1 && (
                       <div className="hidden lg:block absolute top-1/2 -right-4 -translate-y-1/2 z-10 translate-x-1.5">
@@ -413,18 +418,22 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           <section className="max-w-7xl mx-auto px-6 space-y-12">
             <div className="text-center space-y-3">
               <span className="text-xs font-bold font-mono text-[#09090B] uppercase tracking-widest bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200">PRE-BALANCED TEMPLATES</span>
-              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-mono">READY-TO-USE GENRE BASELINES</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">Deploy pre-configured game balance blueprints with preset leveling curves and currency structures.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-space">
+                READY-TO-USE GENRE <span className="font-serif italic font-normal text-amber-600">baselines</span>
+              </h2>
+              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">Deploy pre-configured game balance blueprints with preset leveling curves and currency structures.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {GENRE_TEMPLATES.map((t) => (
-                <div key={t.name} className="bg-white border border-[#E4E0EC] rounded-3xl p-6 hover:border-[#FFD700] transition-all duration-200 hover:-translate-y-1 relative group overflow-hidden shadow-xs hover:shadow-2xl">
+                <div key={t.name} className="bg-white border border-[#E4E0EC] rounded-3xl p-6 hover:border-[#FFD700] transition-all duration-200 hover:-translate-y-1 relative group overflow-hidden shadow-2xs hover:shadow-2xl">
                   <div className="flex justify-between items-start mb-4">
                     <div className="text-4xl group-hover:scale-110 transition-transform duration-200">{t.icon}</div>
-                    <span className="text-[9px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-700 border border-amber-500/20">{t.badge}</span>
+                    <span className="text-[9px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-800 border border-amber-500/30 flex items-center gap-1">
+                      <Coins size={10} className="text-[#FFD700]" /> {t.badge}
+                    </span>
                   </div>
-                  <h3 className="font-extrabold text-lg text-[#09090B] font-mono mb-3">{t.name}</h3>
+                  <h3 className="font-extrabold text-lg text-[#09090B] font-space mb-3">{t.name}</h3>
                   <div className="text-xs text-[#09090B]/70 space-y-2 border-t border-[#E4E0EC] pt-3 font-mono">
                     <div className="flex justify-between">
                       <span className="text-[#09090B]/50">SYSTEMS:</span>
@@ -439,7 +448,7 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                       <span className="font-bold text-[#00E676]">{t.time}</span>
                     </div>
                   </div>
-                  <button onClick={onEnterApp} className="mt-5 w-full text-xs font-bold font-mono text-white bg-[#09090B] py-3 rounded-2xl hover:bg-black transition-colors shadow-md">
+                  <button onClick={onEnterApp} className="mt-5 w-full text-xs font-bold font-mono text-white bg-[#09090B] py-3.5 rounded-2xl hover:bg-black transition-colors shadow-md">
                     INITIALIZE PRESET
                   </button>
                 </div>
@@ -451,12 +460,14 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           <section id="pricing" className="max-w-7xl mx-auto px-6 space-y-12">
             <div className="text-center space-y-3">
               <span className="text-xs font-bold font-mono text-[#FF3B4F] uppercase tracking-widest bg-red-50 px-3 py-1 rounded-full border border-red-100">TRANSPARENT PRICING</span>
-              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-mono">CHOOSE YOUR STUDIO LEVEL</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">Transparent subscription tiers tailored for indie designers and enterprise game studios.</p>
+              <h2 className="text-3xl md:text-5xl font-black text-[#09090B] font-space">
+                CHOOSE YOUR STUDIO <span className="font-serif italic font-normal text-[#FF3B4F]">level</span>
+              </h2>
+              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">Transparent subscription tiers tailored for indie designers and enterprise game studios.</p>
 
-              <div className="inline-flex items-center gap-3 bg-white border border-[#E4E0EC] rounded-2xl p-1.5 mt-6 shadow-sm">
-                <button onClick={() => setBilling("monthly")} className={`px-5 py-2 rounded-xl text-xs font-bold font-mono transition-all ${billing === "monthly" ? "bg-[#09090B] text-white shadow-md" : "text-[#09090B]/60"}`}>MONTHLY</button>
-                <button onClick={() => setBilling("annual")} className={`px-5 py-2 rounded-xl text-xs font-bold font-mono transition-all ${billing === "annual" ? "bg-[#09090B] text-white shadow-md" : "text-[#09090B]/60"}`}>ANNUAL PASS (SAVE 20%)</button>
+              <div className="inline-flex items-center gap-3 bg-white border border-[#E4E0EC] rounded-2xl p-1.5 mt-6 shadow-2xs">
+                <button onClick={() => setBilling("monthly")} className={`px-5 py-2 rounded-xl text-xs font-extrabold font-mono transition-all ${billing === "monthly" ? "bg-[#09090B] text-white shadow-md" : "text-[#09090B]/60"}`}>MONTHLY</button>
+                <button onClick={() => setBilling("annual")} className={`px-5 py-2 rounded-xl text-xs font-extrabold font-mono transition-all ${billing === "annual" ? "bg-[#09090B] text-white shadow-md" : "text-[#09090B]/60"}`}>ANNUAL PASS (SAVE 20%)</button>
               </div>
             </div>
 
@@ -465,8 +476,8 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                 <div key={p.level} className={`border rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 hover:-translate-y-2 ${p.color}`}>
                   <div className="space-y-6">
                     <div className="space-y-2">
-                      <h3 className={`font-black text-xl font-mono ${p.isDark ? "text-white" : "text-[#09090B]"}`}>{p.level}</h3>
-                      <p className={`text-xs ${p.isDark ? "text-zinc-400" : "text-[#09090B]/60"}`}>{p.desc}</p>
+                      <h3 className={`font-black text-xl font-space ${p.isDark ? "text-white" : "text-[#09090B]"}`}>{p.level}</h3>
+                      <p className={`text-xs font-sans ${p.isDark ? "text-zinc-400" : "text-[#09090B]/60"}`}>{p.desc}</p>
                     </div>
 
                     <div className="flex items-baseline gap-1">
@@ -475,9 +486,9 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                       </span>
                       {p.price !== "Custom" && <span className={`text-xs ${p.isDark ? "text-zinc-400" : "text-[#09090B]/50"}`}>/ month</span>}
                     </div>
-                    <div className={`text-[10px] uppercase font-mono font-bold ${p.isDark ? "text-amber-400" : "text-amber-700"}`}>{p.period}</div>
+                    <div className={`text-[10px] uppercase font-mono font-bold ${p.isDark ? "text-amber-400" : "text-amber-800"}`}>{p.period}</div>
 
-                    <ul className={`space-y-3.5 pt-6 border-t ${p.isDark ? "border-zinc-800 text-zinc-300" : "border-[#E4E0EC] text-[#09090B]/80"} text-xs`}>
+                    <ul className={`space-y-3.5 pt-6 border-t ${p.isDark ? "border-zinc-800 text-zinc-300" : "border-[#E4E0EC] text-[#09090B]/80"} text-xs font-sans`}>
                       {p.features.map((f) => (
                         <li key={f} className="flex items-center gap-3">
                           <CheckCircle2 size={16} className={p.isDark ? "text-[#00E676]" : "text-[#00E676] shrink-0"} />
@@ -489,11 +500,11 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
 
                   <button
                     onClick={onEnterApp}
-                    className={`mt-10 w-full font-mono text-xs font-bold py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md ${
+                    className={`mt-10 w-full font-mono text-xs font-extrabold py-4 rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-md ${
                       p.highlight
-                        ? "bg-[#09090B] text-white hover:bg-black border border-[#FFD700]/50"
+                        ? "bg-[#09090B] text-white hover:bg-black border border-[#FFD700]/60"
                         : p.isDark
-                        ? "bg-[#00E676] text-[#09090B] hover:bg-emerald-400"
+                        ? "bg-[#00E676] text-[#09090B] hover:bg-emerald-400 font-black"
                         : "bg-[#FAFAFC] border border-[#E4E0EC] text-[#09090B] hover:bg-zinc-100"
                     }`}
                   >
@@ -508,12 +519,12 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
           <section className="max-w-4xl mx-auto px-6 space-y-8">
             <div className="text-center space-y-2">
               <span className="text-xs font-bold font-mono text-[#00E676] uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">KNOWLEDGE FAQ</span>
-              <h2 className="text-3xl font-black text-center font-mono">FREQUENTLY ASKED QUESTIONS</h2>
+              <h2 className="text-3xl font-black text-center font-space">FREQUENTLY ASKED QUESTIONS</h2>
             </div>
 
             <div className="space-y-4">
               {FAQS.map((faq, idx) => (
-                <div key={faq.q} className="border border-[#E4E0EC] bg-white rounded-2xl overflow-hidden transition-all shadow-xs">
+                <div key={faq.q} className="border border-[#E4E0EC] bg-white rounded-2xl overflow-hidden transition-all shadow-2xs">
                   <button
                     onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
                     className="w-full flex items-center justify-between p-6 text-left font-bold text-sm text-[#09090B] hover:bg-zinc-50 transition-colors font-mono"
@@ -529,72 +540,6 @@ export default function PublicWebsite({ onEnterApp }: PublicWebsiteProps) {
                 </div>
               ))}
             </div>
-          </section>
-        </div>
-      )}
-
-      {activePage === "pricing" && (
-        <div className="py-20">
-          <section className="max-w-7xl mx-auto px-6 space-y-12">
-            <div className="text-center space-y-2">
-              <h2 className="text-4xl font-black font-mono">SELECT YOUR LEVEL PLAN</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto">Choose the development tier that matches your current game production team size.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {PRICING.map((p) => (
-                <div key={p.level} className={`border rounded-3xl p-8 flex flex-col justify-between transition-all duration-300 ${p.color}`}>
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className={`font-black text-xl font-mono ${p.isDark ? "text-white" : "text-[#09090B]"}`}>{p.level}</h3>
-                      <p className={`text-xs ${p.isDark ? "text-zinc-400" : "text-[#09090B]/50"} mt-1`}>{p.desc}</p>
-                    </div>
-                    <div className="flex items-baseline gap-1">
-                      <span className={`text-4xl font-black font-mono ${p.isDark ? "text-white" : "text-[#09090B]"}`}>
-                        {p.price === "Custom" ? "Custom" : `$${p.price}`}
-                      </span>
-                      {p.price !== "Custom" && <span className={`text-xs ${p.isDark ? "text-zinc-400" : "text-[#09090B]/40"}`}>/ month</span>}
-                    </div>
-                  </div>
-                  <button onClick={onEnterApp} className="mt-8 w-full font-mono text-xs font-bold py-3.5 rounded-2xl bg-[#09090B] text-white">
-                    UNLOCK PLAN CLASS
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activePage === "templates" && (
-        <div className="py-20">
-          <section className="max-w-7xl mx-auto px-6 space-y-12">
-            <div className="text-center space-y-2">
-              <h2 className="text-4xl font-black font-mono">GENRE WORKSPACE PRESETS</h2>
-              <p className="text-[#09090B]/60 text-sm max-w-xl mx-auto font-sans">Launch your project with calibrated game balance baselines.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              {GENRE_TEMPLATES.map((t) => (
-                <div key={t.name} className="bg-white border border-[#E4E0EC] rounded-3xl p-6 shadow-xs">
-                  <div className="text-4xl mb-4">{t.icon}</div>
-                  <h3 className="font-extrabold text-lg text-[#09090B] font-mono mb-3">{t.name}</h3>
-                  <button onClick={onEnterApp} className="mt-5 w-full text-xs font-bold font-mono text-white bg-[#09090B] py-3 rounded-2xl">
-                    USE PRESET
-                  </button>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activePage === "methodology" && (
-        <div className="py-20">
-          <section className="max-w-3xl mx-auto px-6 space-y-8 text-left">
-            <h2 className="text-4xl font-black text-center font-mono">THE GAMEFORGE METHODOLOGY</h2>
-            <p className="text-[#09090B]/80 text-sm leading-relaxed font-sans">
-              GameForge Systems AI runs deterministic math simulations combined with static rule checks on raw GDD inputs. 
-              Our specialist agents map system nodes to a central dependency matrix, helping designers detect loops, currency leaks, and motivation holes.
-            </p>
           </section>
         </div>
       )}
