@@ -20,6 +20,7 @@ import proposalRoutes from './routes/proposalRoutes.js';
 import telemetryRoutes from './routes/telemetryRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import balancingRoutes from './routes/balancingRoutes.js';
+import mcpRoutes from './routes/mcpRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import bodyParser from 'body-parser';
 
@@ -71,6 +72,7 @@ export function createApp(): express.Express {
   app.use('/api/telemetry', telemetryRoutes);
   app.use('/api/import', importRoutes);
   app.use('/api/balancing', balancingRoutes);
+  app.use('/api/mcp', mcpRoutes);
 
   // ── Enhanced health endpoint ───────────────────────────────────────────────
   app.get('/api/health', async (_req, res) => {
