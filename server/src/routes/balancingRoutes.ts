@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireNonViewer, requireProjectRole } from '../middleware/rbac.js';
 import { balancingEngine } from '../services/balancingEngine.js';
 import { getProject } from '../services/projectService.js';
 
 const router = Router();
 router.use(authMiddleware);
 
-// POST /api/balancing/run/:projectId — Run deterministic balance analysis
-router.post('/run/:projectId', async (req, res) => {
+// POST /api/balancing/run/:projectId — Run deterministic balance analysis (requires editor+)
+router.post('/run/:projectId', requireNonViewer, async (req, res) => {
   try {
     const { projectId } = req.params;
 
@@ -30,7 +31,7 @@ router.post('/run/:projectId', async (req, res) => {
 });
 
 // GET /api/balancing/report/:projectId — Get latest balance report from audit log
-router.get('/report/:projectId', async (req, res) => {
+router.get('/report/:projectId', requireProjectRole('viewer'), async (req, res) => {
   try {
     const { projectId } = req.params;
 

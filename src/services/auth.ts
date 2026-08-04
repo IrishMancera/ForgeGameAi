@@ -30,7 +30,9 @@ interface LocalStoredUser {
 }
 
 function shouldUseLocalFallback(): boolean {
-  return import.meta.env.DEV || import.meta.env.VITE_USE_LOCAL_AUTH === 'true';
+  // Local fallback is ONLY permitted in local development when explicitly opted-in.
+  // Staging and Production builds NEVER issue or accept local-* offline tokens.
+  return import.meta.env.DEV && import.meta.env.VITE_ENABLE_LOCAL_AUTH_FALLBACK === 'true';
 }
 
 function buildLocalAuthResponse(email: string, password: string, firstName?: string, lastName?: string): AuthResponse {
